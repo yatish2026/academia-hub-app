@@ -20,7 +20,7 @@ type NavItem = { to: string; label: string; icon: React.ComponentType<{ classNam
 
 const NAV: NavItem[] = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/app/users", label: "Users", icon: Users, roles: ["admin"] },
+  { to: "/app/users", label: "Users", icon: Users, roles: ["admin", "hod", "faculty"] },
   { to: "/app/departments", label: "Departments", icon: Building2, roles: ["admin"] },
   { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/fees", label: "Fees", icon: Receipt, roles: ["admin", "hod", "student"] },
@@ -36,15 +36,20 @@ const MOBILE_NAV: NavItem[] = [
 ];
 
 export default function AppLayout() {
-  const { profile, primaryRole, signOut, userId, initialized } = useAuth();
+  const { profile, primaryRole, signOut, userId, initialized, mustReset } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    if (initialized && !userId) navigate({ to: "/login" });
-  }, [initialized, userId, navigate]);
+    if (!initialized) return;
+    if (!userId) {
+      navigate({ to: "/login" });
+    } else if (mustReset) {
+      navigate({ to: "/reset-password" });
+    }
+  }, [initialized, userId, mustReset, navigate]);
 
-  if (!initialized || !userId || !primaryRole) {
+  if (!initialized || !userId || !primaryRole || mustReset) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
         Loading…
@@ -58,7 +63,6 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-sidebar-border bg-sidebar md:flex md:flex-col">
         <div className="flex items-center gap-2 px-6 py-5 border-b border-sidebar-border">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -101,7 +105,6 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      {/* Mobile top header */}
       <header className="md:hidden sticky top-0 z-20 flex items-center justify-between border-b bg-background/90 px-4 pt-safe pb-3 backdrop-blur">
         <div className="flex items-center gap-2 pt-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -124,14 +127,12 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="md:pl-64 pb-24 md:pb-8">
         <div className="mx-auto max-w-6xl px-4 py-5 md:px-8 md:py-8">
           <Outlet />
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
       <nav className="md:hidden fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur pb-safe">
         <div className="grid grid-cols-4">
           {mobileItems.map((item) => {

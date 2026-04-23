@@ -16,12 +16,12 @@ export const Route = createFileRoute("/")({
 });
 
 function LandingPage() {
-  const { init, userId, initialized } = useAuth();
+  const { init, userId, initialized, mustReset } = useAuth();
   const navigate = useNavigate();
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
-    if (initialized && userId) navigate({ to: "/app/dashboard" });
-  }, [initialized, userId, navigate]);
+    if (initialized && userId) navigate({ to: mustReset ? "/reset-password" : "/app/dashboard" });
+  }, [initialized, userId, mustReset, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/40">
@@ -44,20 +44,21 @@ function LandingPage() {
             Run your campus, <span className="text-primary">beautifully.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground">
-            One platform for admins, HODs, faculty, and students. Attendance, fees, timetable, and notices — fast, secure, and mobile-first.
+            One platform for principals, HODs, faculty, and students. Attendance, fees, timetable, and notices — fast, secure, and mobile-first.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <Link to="/login" className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
-              Open dashboard
+              Sign in
             </Link>
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">Accounts are created by your administration — there is no public signup.</p>
         </div>
 
         <div className="mt-12 grid gap-4 sm:grid-cols-3">
           {[
-            { icon: ShieldCheck, title: "Role-based access", desc: "Strict RLS-backed permissions for every role." },
-            { icon: CalendarCheck, title: "Smart attendance", desc: "Mark, track, and analyze attendance per subject." },
-            { icon: Users, title: "Department-aware", desc: "HODs and faculty see only what they should." },
+            { icon: ShieldCheck, title: "Strict role-based access", desc: "Database-enforced permissions for every role. No public signup." },
+            { icon: CalendarCheck, title: "Smart attendance", desc: "One-click marking, real-time percentages, no duplicates." },
+            { icon: Users, title: "Department-aware", desc: "HODs and faculty see only their department." },
           ].map(({ icon: Icon, title, desc }) => (
             <div key={title} className="rounded-2xl border bg-card p-5 shadow-soft">
               <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">

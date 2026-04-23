@@ -8,6 +8,7 @@ type Profile = {
   email: string;
   avatar_url: string | null;
   department_id: string | null;
+  must_reset_password: boolean;
 };
 
 type State = {
@@ -18,6 +19,7 @@ type State = {
   profile: Profile | null;
   roles: AppRole[];
   primaryRole: AppRole | null;
+  mustReset: boolean;
 };
 
 type Actions = {
@@ -25,6 +27,7 @@ type Actions = {
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
+  completePasswordReset: () => Promise<void>;
 };
 
 const ROLE_PRIORITY: AppRole[] = ["admin", "hod", "faculty", "student"];
@@ -37,16 +40,15 @@ export const useAuth = create<State & Actions>((set, get) => ({
   profile: null,
   roles: [],
   primaryRole: null,
+  mustReset: false,
 
   init: async () => {
     if (get().initialized) return;
-    // Listener first
     supabase.auth.onAuthStateChange((_evt, session) => {
       if (!session) {
-        set({ userId: null, email: null, profile: null, roles: [], primaryRole: null });
+        set({ userId: null, email: null, profile: null, roles: [], primaryRole: null, mustReset: false });
       } else {
         set({ userId: session.user.id, email: session.user.email ?? null });
-        // defer DB calls to avoid deadlock
         setTimeout(() => get().refresh(), 0);
       }
     });
@@ -67,7 +69,8 @@ export const useAuth = create<State & Actions>((set, get) => ({
     ]);
     const roles = ((rolesRes.data ?? []).map((r) => r.role) as AppRole[]) ?? [];
     const primaryRole = ROLE_PRIORITY.find((r) => roles.includes(r)) ?? null;
-    set({ profile: (profileRes.data as Profile) ?? null, roles, primaryRole });
+    const profile = (profileRes.data as Profile) ?? null;
+    set({ profile, roles, primaryRole, mustReset: profile?.must_reset_password ?? false });
   },
 
   signIn: async (email, password) => {
@@ -80,6 +83,11 @@ export const useAuth = create<State & Actions>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ userId: null, email: null, profile: null, roles: [], primaryRole: null });
+    set({ userId: null, email: null, profile: null, roles: [], primaryRole: null, mustReset: false });
+  },
+
+  completePasswordReset: async () => {
+    await supabase.rpc("complete_password_reset");
+    await get().refresh();
   },
 }));
