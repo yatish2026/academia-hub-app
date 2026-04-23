@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/timetable")({
+export const Route = createFileRoute("/app/timetable")({
   head: () => ({ meta: [{ title: "Timetable — AcademiaHub" }] }),
   component: TimetablePage,
 });

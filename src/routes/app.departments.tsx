@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { RoleGuard } from "@/components/RoleGuard";
 import { Building2 } from "lucide-react";
 
-export const Route = createFileRoute("/_app/departments")({
+export const Route = createFileRoute("/app/departments")({
   head: () => ({ meta: [{ title: "Departments — AcademiaHub" }] }),
   component: DepartmentsPage,
 });

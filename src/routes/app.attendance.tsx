@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { CheckCircle2, XCircle } from "lucide-react";
 
-export const Route = createFileRoute("/_app/attendance")({
+export const Route = createFileRoute("/app/attendance")({
   head: () => ({ meta: [{ title: "Attendance — AcademiaHub" }] }),
   component: AttendancePage,
 });
