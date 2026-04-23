@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/stores/auth-store";
 import { ROLE_LABEL, type AppRole } from "@/lib/types";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: AppRole[] };
 
@@ -88,12 +89,15 @@ export default function AppLayout() {
             <div className="truncate text-sm font-medium">{profile?.full_name}</div>
             <div className="truncate text-xs text-muted-foreground">{profile?.email}</div>
           </div>
-          <button
-            onClick={() => signOut().then(() => navigate({ to: "/login" }))}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent"
-          >
-            <LogOut className="h-4 w-4" /> Sign out
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => signOut().then(() => navigate({ to: "/login" }))}
+              className="flex flex-1 items-center gap-2 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent"
+            >
+              <LogOut className="h-4 w-4" /> Sign out
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </aside>
 
@@ -108,13 +112,16 @@ export default function AppLayout() {
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{ROLE_LABEL[primaryRole]}</div>
           </div>
         </div>
-        <button
-          onClick={() => signOut().then(() => navigate({ to: "/login" }))}
-          className="rounded-md p-2 text-muted-foreground hover:bg-accent"
-          aria-label="Sign out"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <button
+            onClick={() => signOut().then(() => navigate({ to: "/login" }))}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       {/* Main content */}
