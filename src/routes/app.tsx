@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import AppLayout from "@/components/AppLayout";
 import { useAuth } from "@/stores/auth-store";
 
-export const Route = createFileRoute("/_app")({
+export const Route = createFileRoute("/app")({
   component: AppShell,
 });
 

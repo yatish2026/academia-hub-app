@@ -20,7 +20,7 @@ function LandingPage() {
   const navigate = useNavigate();
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
-    if (initialized && userId) navigate({ to: "/dashboard" });
+    if (initialized && userId) navigate({ to: "/app/dashboard" });
   }, [initialized, userId, navigate]);
 
   return (

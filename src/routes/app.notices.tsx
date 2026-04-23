@@ -11,7 +11,7 @@ import { Megaphone, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-export const Route = createFileRoute("/_app/notices")({
+export const Route = createFileRoute("/app/notices")({
   head: () => ({ meta: [{ title: "Notices — AcademiaHub" }] }),
   component: NoticesPage,
 });

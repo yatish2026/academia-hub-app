@@ -25,7 +25,7 @@ function LoginPage() {
 
   useEffect(() => { init(); }, [init]);
   useEffect(() => {
-    if (initialized && userId) navigate({ to: "/dashboard" });
+    if (initialized && userId) navigate({ to: "/app/dashboard" });
   }, [initialized, userId, navigate]);
 
   const submit = async (e: React.FormEvent) => {
@@ -33,7 +33,7 @@ function LoginPage() {
     setError("");
     const res = await signIn(email, password);
     if (res.error) setError(res.error);
-    else navigate({ to: "/dashboard" });
+    else navigate({ to: "/app/dashboard" });
   };
 
   const fillDemo = (role: string) => {

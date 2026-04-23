@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_app/users")({
+export const Route = createFileRoute("/app/users")({
   head: () => ({ meta: [{ title: "Users — AcademiaHub" }] }),
   component: UsersPage,
 });

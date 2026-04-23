@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/RoleGuard";
 
-export const Route = createFileRoute("/_app/fees")({
+export const Route = createFileRoute("/app/fees")({
   head: () => ({ meta: [{ title: "Fees — AcademiaHub" }] }),
   component: FeesPage,
 });
