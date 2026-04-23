@@ -10,15 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AppUsersRouteImport } from './routes/_app.users'
-import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
-import { Route as AppNoticesRouteImport } from './routes/_app.notices'
-import { Route as AppFeesRouteImport } from './routes/_app.fees'
-import { Route as AppDepartmentsRouteImport } from './routes/_app.departments'
-import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
-import { Route as AppAttendanceRouteImport } from './routes/_app.attendance'
+import { Route as AppUsersRouteImport } from './routes/app.users'
+import { Route as AppTimetableRouteImport } from './routes/app.timetable'
+import { Route as AppNoticesRouteImport } from './routes/app.notices'
+import { Route as AppFeesRouteImport } from './routes/app.fees'
+import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
+import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
+import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -26,7 +26,8 @@ const LoginRoute = LoginRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
-  id: '/_app',
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -72,74 +73,78 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/attendance': typeof AppAttendanceRoute
-  '/dashboard': typeof AppDashboardRoute
-  '/departments': typeof AppDepartmentsRoute
-  '/fees': typeof AppFeesRoute
-  '/notices': typeof AppNoticesRoute
-  '/timetable': typeof AppTimetableRoute
-  '/users': typeof AppUsersRoute
+  '/app/attendance': typeof AppAttendanceRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/departments': typeof AppDepartmentsRoute
+  '/app/fees': typeof AppFeesRoute
+  '/app/notices': typeof AppNoticesRoute
+  '/app/timetable': typeof AppTimetableRoute
+  '/app/users': typeof AppUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/attendance': typeof AppAttendanceRoute
-  '/dashboard': typeof AppDashboardRoute
-  '/departments': typeof AppDepartmentsRoute
-  '/fees': typeof AppFeesRoute
-  '/notices': typeof AppNoticesRoute
-  '/timetable': typeof AppTimetableRoute
-  '/users': typeof AppUsersRoute
+  '/app/attendance': typeof AppAttendanceRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/departments': typeof AppDepartmentsRoute
+  '/app/fees': typeof AppFeesRoute
+  '/app/notices': typeof AppNoticesRoute
+  '/app/timetable': typeof AppTimetableRoute
+  '/app/users': typeof AppUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_app': typeof AppRouteWithChildren
+  '/app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/_app/attendance': typeof AppAttendanceRoute
-  '/_app/dashboard': typeof AppDashboardRoute
-  '/_app/departments': typeof AppDepartmentsRoute
-  '/_app/fees': typeof AppFeesRoute
-  '/_app/notices': typeof AppNoticesRoute
-  '/_app/timetable': typeof AppTimetableRoute
-  '/_app/users': typeof AppUsersRoute
+  '/app/attendance': typeof AppAttendanceRoute
+  '/app/dashboard': typeof AppDashboardRoute
+  '/app/departments': typeof AppDepartmentsRoute
+  '/app/fees': typeof AppFeesRoute
+  '/app/notices': typeof AppNoticesRoute
+  '/app/timetable': typeof AppTimetableRoute
+  '/app/users': typeof AppUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/app'
     | '/login'
-    | '/attendance'
-    | '/dashboard'
-    | '/departments'
-    | '/fees'
-    | '/notices'
-    | '/timetable'
-    | '/users'
+    | '/app/attendance'
+    | '/app/dashboard'
+    | '/app/departments'
+    | '/app/fees'
+    | '/app/notices'
+    | '/app/timetable'
+    | '/app/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app'
     | '/login'
-    | '/attendance'
-    | '/dashboard'
-    | '/departments'
-    | '/fees'
-    | '/notices'
-    | '/timetable'
-    | '/users'
+    | '/app/attendance'
+    | '/app/dashboard'
+    | '/app/departments'
+    | '/app/fees'
+    | '/app/notices'
+    | '/app/timetable'
+    | '/app/users'
   id:
     | '__root__'
     | '/'
-    | '/_app'
+    | '/app'
     | '/login'
-    | '/_app/attendance'
-    | '/_app/dashboard'
-    | '/_app/departments'
-    | '/_app/fees'
-    | '/_app/notices'
-    | '/_app/timetable'
-    | '/_app/users'
+    | '/app/attendance'
+    | '/app/dashboard'
+    | '/app/departments'
+    | '/app/fees'
+    | '/app/notices'
+    | '/app/timetable'
+    | '/app/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,10 +162,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -171,52 +176,52 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app/users': {
-      id: '/_app/users'
+    '/app/users': {
+      id: '/app/users'
       path: '/users'
-      fullPath: '/users'
+      fullPath: '/app/users'
       preLoaderRoute: typeof AppUsersRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/timetable': {
-      id: '/_app/timetable'
+    '/app/timetable': {
+      id: '/app/timetable'
       path: '/timetable'
-      fullPath: '/timetable'
+      fullPath: '/app/timetable'
       preLoaderRoute: typeof AppTimetableRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/notices': {
-      id: '/_app/notices'
+    '/app/notices': {
+      id: '/app/notices'
       path: '/notices'
-      fullPath: '/notices'
+      fullPath: '/app/notices'
       preLoaderRoute: typeof AppNoticesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/fees': {
-      id: '/_app/fees'
+    '/app/fees': {
+      id: '/app/fees'
       path: '/fees'
-      fullPath: '/fees'
+      fullPath: '/app/fees'
       preLoaderRoute: typeof AppFeesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/departments': {
-      id: '/_app/departments'
+    '/app/departments': {
+      id: '/app/departments'
       path: '/departments'
-      fullPath: '/departments'
+      fullPath: '/app/departments'
       preLoaderRoute: typeof AppDepartmentsRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/dashboard': {
-      id: '/_app/dashboard'
+    '/app/dashboard': {
+      id: '/app/dashboard'
       path: '/dashboard'
-      fullPath: '/dashboard'
+      fullPath: '/app/dashboard'
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/attendance': {
-      id: '/_app/attendance'
+    '/app/attendance': {
+      id: '/app/attendance'
       path: '/attendance'
-      fullPath: '/attendance'
+      fullPath: '/app/attendance'
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
@@ -253,3 +258,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
