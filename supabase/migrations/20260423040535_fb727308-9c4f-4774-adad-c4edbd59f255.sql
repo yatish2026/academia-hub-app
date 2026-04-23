@@ -1,0 +1,2 @@
+UPDATE public.profiles SET must_reset_password = false, department_id = '36d558c1-fa7e-4cd1-8e6d-66a7b0c759e4' WHERE email IN ('hod@demo.com','faculty@demo.com','student@demo.com');
+UPDATE public.profiles SET must_reset_password = false WHERE email = 'admin@demo.com';
