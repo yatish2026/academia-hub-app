@@ -70,15 +70,14 @@ function TimetablePage() {
 
   const loadFacultyList = async () => {
     if (!profile?.department_id) return;
-    const { data } = await supabase
+    const { data: facs } = await supabase
       .from("faculty")
-      .select("id, profiles(full_name)")
+      .select("id")
       .eq("department_id", profile.department_id);
-    const list: FacultyOpt[] = (data ?? []).map((f: { id: string; profiles: { full_name: string } | null }) => ({
-      id: f.id,
-      full_name: f.profiles?.full_name ?? "—",
-    }));
-    setFacultyList(list);
+    const ids = (facs ?? []).map((f) => f.id);
+    if (ids.length === 0) { setFacultyList([]); return; }
+    const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+    setFacultyList((profs ?? []).map((p) => ({ id: p.id, full_name: p.full_name })));
   };
 
   useEffect(() => {
