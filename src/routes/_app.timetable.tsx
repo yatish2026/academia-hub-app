@@ -1,8 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/stores/auth-store";
 import { PageHeader } from "@/components/PageHeader";
 import { DAYS } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2, Clock } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/timetable")({
   head: () => ({ meta: [{ title: "Timetable — AcademiaHub" }] }),
@@ -12,20 +16,40 @@ export const Route = createFileRoute("/_app/timetable")({
 type Row = { id: string; day_of_week: number; time_slot: string; subject: string; section: string; faculty_id: string | null; approved: boolean };
 
 function TimetablePage() {
+  const { primaryRole } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("timetable").select("id, day_of_week, time_slot, subject, section, faculty_id, approved").order("day_of_week").order("time_slot");
-      setRows(data ?? []);
-    })();
-  }, []);
+  const load = async () => {
+    const { data } = await supabase.from("timetable").select("id, day_of_week, time_slot, subject, section, faculty_id, approved").order("day_of_week").order("time_slot");
+    setRows(data ?? []);
+  };
+  useEffect(() => { load(); }, []);
 
   const slots = Array.from(new Set(rows.map((r) => r.time_slot))).sort();
+  const canApprove = primaryRole === "hod" || primaryRole === "admin";
+  const pending = rows.filter((r) => !r.approved);
+
+  const approveAll = async () => {
+    const ids = pending.map((p) => p.id);
+    if (ids.length === 0) return;
+    const { error } = await supabase.from("timetable").update({ approved: true }).in("id", ids);
+    if (error) toast.error(error.message); else { toast.success(`Approved ${ids.length} entries`); load(); }
+  };
+
+  const toggleApprove = async (id: string, approved: boolean) => {
+    const { error } = await supabase.from("timetable").update({ approved: !approved }).eq("id", id);
+    if (error) toast.error(error.message); else load();
+  };
 
   return (
     <div>
-      <PageHeader title="Timetable" description="Weekly schedule" />
+      <PageHeader
+        title="Timetable"
+        description={canApprove && pending.length > 0 ? `${pending.length} entries pending approval` : "Weekly schedule"}
+        action={canApprove && pending.length > 0 && (
+          <Button onClick={approveAll}><CheckCircle2 className="mr-1 h-4 w-4" /> Approve all</Button>
+        )}
+      />
       <div className="overflow-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
@@ -48,10 +72,17 @@ function TimetablePage() {
                   return (
                     <td key={d} className="px-3 py-3 align-top">
                       {cell ? (
-                        <div className={`rounded-md border-l-4 bg-muted/40 p-2 text-xs ${cell.approved ? "border-success" : "border-warning"}`}>
+                        <button
+                          disabled={!canApprove}
+                          onClick={() => canApprove && toggleApprove(cell.id, cell.approved)}
+                          className={`w-full rounded-md border-l-4 bg-muted/40 p-2 text-left text-xs transition-colors ${cell.approved ? "border-success" : "border-warning"} ${canApprove ? "hover:bg-muted" : ""}`}
+                        >
                           <div className="font-medium text-foreground">{cell.subject}</div>
-                          <div className="text-muted-foreground">Sec {cell.section}</div>
-                        </div>
+                          <div className="flex items-center gap-1 text-muted-foreground">
+                            <span>Sec {cell.section}</span>
+                            {!cell.approved && <Clock className="h-3 w-3 text-warning" />}
+                          </div>
+                        </button>
                       ) : (
                         <span className="text-xs text-muted-foreground/40">—</span>
                       )}
@@ -66,3 +97,4 @@ function TimetablePage() {
     </div>
   );
 }
+
