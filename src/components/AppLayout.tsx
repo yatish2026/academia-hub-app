@@ -119,8 +119,9 @@ export default function AppLayout() {
             className="rounded-md p-2 text-muted-foreground hover:bg-accent"
             aria-label="Sign out"
           >
-          <LogOut className="h-4 w-4" />
-        </button>
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       {/* Main content */}
