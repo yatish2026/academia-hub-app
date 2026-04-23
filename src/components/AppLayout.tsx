@@ -19,20 +19,20 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: AppRole[] };
 
 const NAV: NavItem[] = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/users", label: "Users", icon: Users, roles: ["admin"] },
-  { to: "/departments", label: "Departments", icon: Building2, roles: ["admin"] },
-  { to: "/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/fees", label: "Fees", icon: Receipt, roles: ["admin", "hod", "student"] },
-  { to: "/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/users", label: "Users", icon: Users, roles: ["admin"] },
+  { to: "/app/departments", label: "Departments", icon: Building2, roles: ["admin"] },
+  { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/fees", label: "Fees", icon: Receipt, roles: ["admin", "hod", "student"] },
+  { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
 ];
 
 const MOBILE_NAV: NavItem[] = [
-  { to: "/dashboard", label: "Home", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/dashboard", label: "Home", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
 ];
 
 export default function AppLayout() {
