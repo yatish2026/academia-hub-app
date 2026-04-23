@@ -199,6 +199,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          must_reset_password: boolean
+          phone: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -207,6 +209,8 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          must_reset_password?: boolean
+          phone?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -215,6 +219,8 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          must_reset_password?: boolean
+          phone?: string | null
         }
         Relationships: [
           {
@@ -267,33 +273,42 @@ export type Database = {
           created_at: string
           day_of_week: number
           department_id: string
+          end_time: string | null
           faculty_id: string | null
           id: string
+          period_no: number | null
           section: string
+          start_time: string | null
           subject: string
-          time_slot: string
+          year: number
         }
         Insert: {
           approved?: boolean
           created_at?: string
           day_of_week: number
           department_id: string
+          end_time?: string | null
           faculty_id?: string | null
           id?: string
+          period_no?: number | null
           section?: string
+          start_time?: string | null
           subject: string
-          time_slot: string
+          year?: number
         }
         Update: {
           approved?: boolean
           created_at?: string
           day_of_week?: number
           department_id?: string
+          end_time?: string | null
           faculty_id?: string | null
           id?: string
+          period_no?: number | null
           section?: string
+          start_time?: string | null
           subject?: string
-          time_slot?: string
+          year?: number
         }
         Relationships: [
           {
@@ -338,6 +353,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_password_reset: { Args: never; Returns: undefined }
       get_user_department: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
