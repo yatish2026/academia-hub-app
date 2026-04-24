@@ -134,61 +134,9 @@ function TimetablePage() {
     else { toast.success(`Approved ${ids.length} entries`); load(); }
   };
 
-  // Student view = today's classes only
+  // Student view = pick any day (default today) with prev/next navigation
   if (primaryRole === "student") {
-    const dow = todayDow();
-    const today = rows
-      .filter((r) => r.day_of_week === dow && r.approved)
-      .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""));
-    const now = new Date();
-    const nowMin = now.getHours() * 60 + now.getMinutes();
-    const toMin = (t: string | null) => {
-      if (!t) return -1;
-      const [h, m] = t.split(":").map(Number);
-      return h * 60 + m;
-    };
-    return (
-      <div>
-        <PageHeader title="Today's classes" description={DAYS[dow] ? `${DAYS[dow]} schedule` : "Enjoy your day off"} />
-        {today.length === 0 ? (
-          <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
-            No classes scheduled for today.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {today.map((r) => {
-              const start = toMin(r.start_time);
-              const end = toMin(r.end_time);
-              const isCurrent = start <= nowMin && nowMin < end;
-              const isUpcoming = start > nowMin;
-              const isPast = end <= nowMin;
-              return (
-                <div
-                  key={r.id}
-                  className={`flex items-center gap-3 rounded-xl border-l-4 bg-card p-4 shadow-soft transition-opacity ${
-                    isCurrent ? "border-success ring-1 ring-success/20" : isUpcoming ? "border-primary" : "border-muted opacity-60"
-                  }`}
-                >
-                  <div className="min-w-[90px] text-xs font-medium text-muted-foreground">
-                    {fmtTime(r.start_time)}<br />
-                    <span className="text-[10px]">to {fmtTime(r.end_time)}</span>
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">{r.subject}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {faculty[r.faculty_id ?? ""] ?? "—"} · Sec {r.section} · Year {r.year}
-                    </div>
-                  </div>
-                  {isCurrent && <span className="rounded-full bg-success/10 px-2 py-1 text-[11px] font-medium text-success">Now</span>}
-                  {isUpcoming && !isCurrent && <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">Upcoming</span>}
-                  {isPast && <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">Done</span>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
+    return <StudentTimetable rows={rows} faculty={faculty} />;
   }
 
   // Faculty / HOD / Admin: weekly grid + add form
