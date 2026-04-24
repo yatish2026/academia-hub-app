@@ -558,6 +558,7 @@ function StudentTimetable({ rows, faculty, userId }: { rows: Row[]; faculty: Rec
                     {faculty[r.faculty_id ?? ""] ?? "—"} · Sec {r.section} · Year {r.year}
                   </div>
                 </div>
+                {!r.approved && <span className="rounded-full bg-warning/10 px-2 py-1 text-[11px] font-medium text-warning">Tentative</span>}
                 {isCurrent && <span className="rounded-full bg-success/10 px-2 py-1 text-[11px] font-medium text-success">Now</span>}
                 {isUpcoming && <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">Upcoming</span>}
                 {isPast && <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">Done</span>}
