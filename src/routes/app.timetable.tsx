@@ -137,7 +137,7 @@ function TimetablePage() {
   };
 
   if (primaryRole === "student") {
-    return <StudentTimetable rows={rows} faculty={faculty} />;
+    return <StudentTimetable rows={rows} faculty={faculty} userId={userId!} />;
   }
 
   // Faculty / HOD / Admin: weekly grid
