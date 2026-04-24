@@ -91,6 +91,9 @@ function TimetablePage() {
       toast.error("Fill subject, and ensure you are in a department");
       return;
     }
+    // faculty_id must reference an existing faculty row, or be null.
+    let facultyId: string | null = form.faculty_id?.trim() ? form.faculty_id : null;
+    if (!facultyId && primaryRole === "faculty") facultyId = userId;
     const insertRow = {
       day_of_week: Number(form.day_of_week),
       start_time: form.start_time,
@@ -99,7 +102,7 @@ function TimetablePage() {
       section: form.section,
       year: Number(form.year),
       department_id: profile.department_id,
-      faculty_id: form.faculty_id || (primaryRole === "faculty" ? userId : null),
+      faculty_id: facultyId,
       approved: primaryRole === "hod" || primaryRole === "admin",
     };
     const { error } = await supabase.from("timetable").insert(insertRow);
