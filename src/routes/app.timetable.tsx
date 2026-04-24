@@ -331,19 +331,28 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data: studs } = await supabase
         .from("students")
-        .select("id, roll_no, section, year, profiles(full_name)")
+        .select("id, roll_no, section, year")
         .eq("department_id", cell.department_id)
         .eq("section", cell.section)
         .eq("year", cell.year)
         .order("roll_no");
-      const list: Student[] = (data ?? []).map((s: any) => ({
+      const ids = (studs ?? []).map((s) => s.id);
+      const nameMap: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", ids);
+        for (const p of profs ?? []) nameMap[p.id] = p.full_name;
+      }
+      const list: Student[] = (studs ?? []).map((s) => ({
         id: s.id,
         roll_no: s.roll_no,
         section: s.section,
         year: s.year,
-        full_name: s.profiles?.full_name ?? "—",
+        full_name: nameMap[s.id] ?? "—",
       }));
       setStudents(list);
       // Default everyone to present
