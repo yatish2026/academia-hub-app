@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Megaphone,
   Building2,
+  BookOpen,
   LogOut,
   GraduationCap,
 } from "lucide-react";
@@ -22,6 +23,7 @@ const NAV: NavItem[] = [
   { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/users", label: "Users", icon: Users, roles: ["admin", "hod", "faculty"] },
   { to: "/app/departments", label: "Departments", icon: Building2, roles: ["admin"] },
+  { to: "/app/subjects", label: "Subjects", icon: BookOpen, roles: ["admin", "hod"] },
   { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/fees", label: "Fees", icon: Receipt, roles: ["admin", "hod", "student"] },
   { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
