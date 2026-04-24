@@ -137,7 +137,7 @@ function TimetablePage() {
   };
 
   if (primaryRole === "student") {
-    return <StudentTimetable rows={rows} faculty={faculty} />;
+    return <StudentTimetable rows={rows} faculty={faculty} userId={userId!} />;
   }
 
   // Faculty / HOD / Admin: weekly grid
@@ -331,19 +331,28 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase
+      const { data: studs } = await supabase
         .from("students")
-        .select("id, roll_no, section, year, profiles(full_name)")
+        .select("id, roll_no, section, year")
         .eq("department_id", cell.department_id)
         .eq("section", cell.section)
         .eq("year", cell.year)
         .order("roll_no");
-      const list: Student[] = (data ?? []).map((s: any) => ({
+      const ids = (studs ?? []).map((s) => s.id);
+      const nameMap: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", ids);
+        for (const p of profs ?? []) nameMap[p.id] = p.full_name;
+      }
+      const list: Student[] = (studs ?? []).map((s) => ({
         id: s.id,
         roll_no: s.roll_no,
         section: s.section,
         year: s.year,
-        full_name: s.profiles?.full_name ?? "—",
+        full_name: nameMap[s.id] ?? "—",
       }));
       setStudents(list);
       // Default everyone to present
@@ -447,13 +456,25 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
   );
 }
 
-function StudentTimetable({ rows, faculty }: { rows: Row[]; faculty: Record<string, string> }) {
+function StudentTimetable({ rows, faculty, userId }: { rows: Row[]; faculty: Record<string, string>; userId: string }) {
+  const [me, setMe] = useState<{ year: number; section: string } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("year, section")
+        .eq("id", userId)
+        .maybeSingle();
+      if (data) setMe({ year: data.year, section: data.section });
+    })();
+  }, [userId]);
   const [dow, setDow] = useState<number>(() => {
     const d = todayDow();
     return d >= 1 && d <= 6 ? d : 1;
   });
   const dayRows = rows
-    .filter((r) => r.day_of_week === dow && r.approved)
+    .filter((r) => r.day_of_week === dow)
+    .filter((r) => !me || (r.year === me.year && r.section === me.section))
     .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""));
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
@@ -537,6 +558,7 @@ function StudentTimetable({ rows, faculty }: { rows: Row[]; faculty: Record<stri
                     {faculty[r.faculty_id ?? ""] ?? "—"} · Sec {r.section} · Year {r.year}
                   </div>
                 </div>
+                {!r.approved && <span className="rounded-full bg-warning/10 px-2 py-1 text-[11px] font-medium text-warning">Tentative</span>}
                 {isCurrent && <span className="rounded-full bg-success/10 px-2 py-1 text-[11px] font-medium text-success">Now</span>}
                 {isUpcoming && <span className="rounded-full bg-primary/10 px-2 py-1 text-[11px] font-medium text-primary">Upcoming</span>}
                 {isPast && <span className="rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">Done</span>}
