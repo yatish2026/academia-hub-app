@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { CheckCircle2, Clock, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Clock, Plus, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 export const Route = createFileRoute("/app/timetable")({
   head: () => ({ meta: [{ title: "Timetable — AcademiaHub" }] }),
@@ -31,6 +32,7 @@ type Row = {
 };
 
 type FacultyOpt = { id: string; full_name: string };
+type Student = { id: string; roll_no: string; section: string; year: number; full_name: string };
 
 function TimetablePage() {
   const { primaryRole, profile, userId } = useAuth();
@@ -38,6 +40,7 @@ function TimetablePage() {
   const [faculty, setFaculty] = useState<Record<string, string>>({});
   const [facultyList, setFacultyList] = useState<FacultyOpt[]>([]);
   const [open, setOpen] = useState(false);
+  const [markCell, setMarkCell] = useState<Row | null>(null);
   const [form, setForm] = useState({
     day_of_week: "1",
     start_time: "09:00",
@@ -58,7 +61,6 @@ function TimetablePage() {
       .order("day_of_week")
       .order("start_time");
     setRows((data as Row[]) ?? []);
-    // resolve faculty names
     const ids = Array.from(new Set((data ?? []).map((r) => r.faculty_id).filter(Boolean))) as string[];
     if (ids.length) {
       const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
@@ -91,7 +93,6 @@ function TimetablePage() {
       toast.error("Fill subject, and ensure you are in a department");
       return;
     }
-    // faculty_id must reference an existing faculty row, or be null.
     let facultyId: string | null = form.faculty_id?.trim() ? form.faculty_id : null;
     if (!facultyId && primaryRole === "faculty") facultyId = userId;
     const insertRow = {
@@ -114,9 +115,10 @@ function TimetablePage() {
   };
 
   const remove = async (id: string) => {
+    if (!window.confirm("Delete this class?")) return;
     const { error } = await supabase.from("timetable").delete().eq("id", id);
     if (error) toast.error(error.message);
-    else load();
+    else { toast.success("Deleted"); load(); }
   };
 
   const toggleApprove = async (id: string, approved: boolean) => {
@@ -134,16 +136,21 @@ function TimetablePage() {
     else { toast.success(`Approved ${ids.length} entries`); load(); }
   };
 
-  // Student view = pick any day (default today) with prev/next navigation
   if (primaryRole === "student") {
     return <StudentTimetable rows={rows} faculty={faculty} />;
   }
 
-  // Faculty / HOD / Admin: weekly grid + add form
-  // Build unique slots
+  // Faculty / HOD / Admin: weekly grid
+  // Faculty sees ONLY their own classes; HOD/Admin see whole department
+  const visibleRows = primaryRole === "faculty"
+    ? rows.filter((r) => r.faculty_id === userId)
+    : rows;
+
   const slotKeys = Array.from(
-    new Set(rows.map((r) => `${r.start_time ?? ""}|${r.end_time ?? ""}`).filter((k) => k !== "|"))
+    new Set(visibleRows.map((r) => `${r.start_time ?? ""}|${r.end_time ?? ""}`).filter((k) => k !== "|"))
   ).sort();
+
+  const canMarkAttendance = primaryRole === "faculty";
 
   return (
     <div>
@@ -151,7 +158,9 @@ function TimetablePage() {
         title="Weekly timetable"
         description={
           canApprove && pending.length > 0
-            ? `${pending.length} entries pending approval — repeats every week`
+            ? `${pending.length} entries pending approval`
+            : canMarkAttendance
+            ? "Tap a class to mark attendance"
             : "Set once, repeats every week"
         }
         action={
@@ -231,7 +240,7 @@ function TimetablePage() {
           </thead>
           <tbody>
             {slotKeys.length === 0 && (
-              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No timetable entries yet. Click "Add entry" to start.</td></tr>
+              <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No timetable entries yet.</td></tr>
             )}
             {slotKeys.map((key) => {
               const [start, end] = key.split("|");
@@ -241,41 +250,54 @@ function TimetablePage() {
                     {fmtTime(start)}<br /><span className="text-[10px]">{fmtTime(end)}</span>
                   </td>
                   {[1, 2, 3, 4, 5, 6].map((d) => {
-                    const cells = rows.filter((r) => r.day_of_week === d && r.start_time === start && r.end_time === end);
+                    const cells = visibleRows.filter((r) => r.day_of_week === d && r.start_time === start && r.end_time === end);
                     return (
                       <td key={d} className="px-3 py-3 align-top">
                         {cells.length === 0 ? (
                           <span className="text-xs text-muted-foreground/40">—</span>
                         ) : (
                           <div className="space-y-1">
-                            {cells.map((cell) => (
-                              <div
-                                key={cell.id}
-                                className={`group rounded-md border-l-4 bg-muted/40 p-2 text-xs ${cell.approved ? "border-success" : "border-warning"}`}
-                              >
-                                <div className="flex items-start justify-between gap-1">
-                                  <div className="font-medium text-foreground">{cell.subject}</div>
-                                  {canEdit && (
-                                    <button onClick={() => remove(cell.id)} className="opacity-0 group-hover:opacity-100" aria-label="Delete">
-                                      <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                            {cells.map((cell) => {
+                              const isMine = cell.faculty_id === userId;
+                              const clickable = canMarkAttendance && isMine;
+                              return (
+                                <div
+                                  key={cell.id}
+                                  className={`group rounded-md border-l-4 bg-muted/40 p-2 text-xs ${cell.approved ? "border-success" : "border-warning"} ${clickable ? "cursor-pointer hover:bg-primary/10 transition-colors" : ""}`}
+                                  onClick={() => clickable && setMarkCell(cell)}
+                                  role={clickable ? "button" : undefined}
+                                >
+                                  <div className="flex items-start justify-between gap-1">
+                                    <div className="font-medium text-foreground">{cell.subject}</div>
+                                    {canEdit && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); remove(cell.id); }}
+                                        className="text-muted-foreground hover:text-destructive"
+                                        aria-label="Delete"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-1 text-muted-foreground">
+                                    <span>Sec {cell.section} · Y{cell.year}</span>
+                                  </div>
+                                  <div className="text-muted-foreground truncate">{faculty[cell.faculty_id ?? ""] ?? "—"}</div>
+                                  {!cell.approved && (
+                                    <button
+                                      disabled={!canApprove}
+                                      onClick={(e) => { e.stopPropagation(); toggleApprove(cell.id, cell.approved); }}
+                                      className="mt-1 inline-flex items-center gap-1 text-warning hover:underline disabled:no-underline disabled:cursor-not-allowed"
+                                    >
+                                      <Clock className="h-3 w-3" /> Pending
                                     </button>
                                   )}
+                                  {clickable && cell.approved && (
+                                    <div className="mt-1 text-[10px] text-primary">Tap to mark attendance →</div>
+                                  )}
                                 </div>
-                                <div className="flex items-center gap-1 text-muted-foreground">
-                                  <span>Sec {cell.section} · Y{cell.year}</span>
-                                </div>
-                                <div className="text-muted-foreground truncate">{faculty[cell.faculty_id ?? ""] ?? "—"}</div>
-                                {!cell.approved && (
-                                  <button
-                                    disabled={!canApprove}
-                                    onClick={() => toggleApprove(cell.id, cell.approved)}
-                                    className="mt-1 inline-flex items-center gap-1 text-warning hover:underline disabled:no-underline disabled:cursor-not-allowed"
-                                  >
-                                    <Clock className="h-3 w-3" /> Pending
-                                  </button>
-                                )}
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </td>
@@ -287,7 +309,141 @@ function TimetablePage() {
           </tbody>
         </table>
       </div>
+
+      {markCell && (
+        <MarkAttendanceSheet
+          cell={markCell}
+          onClose={() => setMarkCell(null)}
+          facultyId={userId!}
+        />
+      )}
     </div>
+  );
+}
+
+function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose: () => void; facultyId: string }) {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [marks, setMarks] = useState<Record<string, "present" | "absent">>({});
+  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from("students")
+        .select("id, roll_no, section, year, profiles(full_name)")
+        .eq("department_id", cell.department_id)
+        .eq("section", cell.section)
+        .eq("year", cell.year)
+        .order("roll_no");
+      const list: Student[] = (data ?? []).map((s: any) => ({
+        id: s.id,
+        roll_no: s.roll_no,
+        section: s.section,
+        year: s.year,
+        full_name: s.profiles?.full_name ?? "—",
+      }));
+      setStudents(list);
+      // Default everyone to present
+      const def: Record<string, "present" | "absent"> = {};
+      list.forEach((s) => (def[s.id] = "present"));
+      // Load existing marks
+      const { data: existing } = await supabase
+        .from("attendance")
+        .select("student_id, status")
+        .eq("subject", cell.subject)
+        .eq("date", date);
+      for (const e of existing ?? []) def[e.student_id] = e.status as "present" | "absent";
+      setMarks(def);
+      setLoading(false);
+    })();
+  }, [cell.id, date]);
+
+  const toggle = (id: string) =>
+    setMarks((m) => ({ ...m, [id]: m[id] === "present" ? "absent" : "present" }));
+
+  const submit = async () => {
+    const rows = students.map((s) => ({
+      student_id: s.id,
+      faculty_id: facultyId,
+      subject: cell.subject,
+      date,
+      status: marks[s.id] ?? "present",
+    }));
+    setSaving(true);
+    const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "student_id,subject,date" });
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    const present = rows.filter((r) => r.status === "present").length;
+    toast.success(`Saved · ${present}/${rows.length} present`);
+    onClose();
+  };
+
+  const presentCount = students.filter((s) => marks[s.id] === "present").length;
+
+  return (
+    <Sheet open onOpenChange={(o) => !o && onClose()}>
+      <SheetContent className="overflow-y-auto sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>{cell.subject}</SheetTitle>
+          <p className="text-xs text-muted-foreground">
+            Sec {cell.section} · Year {cell.year} · {fmtTime(cell.start_time)} – {fmtTime(cell.end_time)}
+          </p>
+        </SheetHeader>
+
+        <div className="mt-4 space-y-3">
+          <div className="grid gap-1.5">
+            <Label>Date</Label>
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
+            <span className="font-medium text-success">{presentCount}</span>
+            <span className="text-muted-foreground"> / {students.length} present · tap a student to toggle</span>
+          </div>
+
+          {loading ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">Loading students…</p>
+          ) : students.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No students found in {cell.section} · Year {cell.year}.
+            </p>
+          ) : (
+            <div className="rounded-lg border divide-y">
+              {students.map((s) => {
+                const status = marks[s.id] ?? "present";
+                const present = status === "present";
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => toggle(s.id)}
+                    className={`flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors ${
+                      present ? "bg-success/10 hover:bg-success/15" : "bg-destructive/5 hover:bg-destructive/10"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium">{s.full_name}</div>
+                      <div className="text-xs text-muted-foreground">{s.roll_no}</div>
+                    </div>
+                    {present ? (
+                      <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
+                    ) : (
+                      <XCircle className="h-5 w-5 shrink-0 text-destructive" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <Button className="w-full" onClick={submit} disabled={saving || loading || students.length === 0}>
+            {saving ? "Saving…" : "Submit attendance"}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
@@ -308,7 +464,6 @@ function StudentTimetable({ rows, faculty }: { rows: Row[]; faculty: Record<stri
   };
   const isToday = dow === todayDow();
 
-  // Build display list with break/lunch markers between classes (10 min short break, 1hr lunch)
   type Item = { kind: "class"; row: Row } | { kind: "break"; label: string; start: number; end: number };
   const items: Item[] = [];
   dayRows.forEach((r, i) => {

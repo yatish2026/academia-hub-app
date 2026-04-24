@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppTimetableRouteImport } from './routes/app.timetable'
+import { Route as AppSubjectsRouteImport } from './routes/app.subjects'
 import { Route as AppNoticesRouteImport } from './routes/app.notices'
 import { Route as AppFeesRouteImport } from './routes/app.fees'
 import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
@@ -49,6 +50,11 @@ const AppUsersRoute = AppUsersRouteImport.update({
 const AppTimetableRoute = AppTimetableRouteImport.update({
   id: '/timetable',
   path: '/timetable',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSubjectsRoute = AppSubjectsRouteImport.update({
+  id: '/subjects',
+  path: '/subjects',
   getParentRoute: () => AppRoute,
 } as any)
 const AppNoticesRoute = AppNoticesRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
   '/app/notices': typeof AppNoticesRoute
+  '/app/subjects': typeof AppSubjectsRoute
   '/app/timetable': typeof AppTimetableRoute
   '/app/users': typeof AppUsersRoute
 }
@@ -100,6 +107,7 @@ export interface FileRoutesByTo {
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
   '/app/notices': typeof AppNoticesRoute
+  '/app/subjects': typeof AppSubjectsRoute
   '/app/timetable': typeof AppTimetableRoute
   '/app/users': typeof AppUsersRoute
 }
@@ -114,6 +122,7 @@ export interface FileRoutesById {
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
   '/app/notices': typeof AppNoticesRoute
+  '/app/subjects': typeof AppSubjectsRoute
   '/app/timetable': typeof AppTimetableRoute
   '/app/users': typeof AppUsersRoute
 }
@@ -129,6 +138,7 @@ export interface FileRouteTypes {
     | '/app/departments'
     | '/app/fees'
     | '/app/notices'
+    | '/app/subjects'
     | '/app/timetable'
     | '/app/users'
   fileRoutesByTo: FileRoutesByTo
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/app/departments'
     | '/app/fees'
     | '/app/notices'
+    | '/app/subjects'
     | '/app/timetable'
     | '/app/users'
   id:
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | '/app/departments'
     | '/app/fees'
     | '/app/notices'
+    | '/app/subjects'
     | '/app/timetable'
     | '/app/users'
   fileRoutesById: FileRoutesById
@@ -210,6 +222,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTimetableRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/subjects': {
+      id: '/app/subjects'
+      path: '/subjects'
+      fullPath: '/app/subjects'
+      preLoaderRoute: typeof AppSubjectsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/notices': {
       id: '/app/notices'
       path: '/notices'
@@ -254,6 +273,7 @@ interface AppRouteChildren {
   AppDepartmentsRoute: typeof AppDepartmentsRoute
   AppFeesRoute: typeof AppFeesRoute
   AppNoticesRoute: typeof AppNoticesRoute
+  AppSubjectsRoute: typeof AppSubjectsRoute
   AppTimetableRoute: typeof AppTimetableRoute
   AppUsersRoute: typeof AppUsersRoute
 }
@@ -264,6 +284,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDepartmentsRoute: AppDepartmentsRoute,
   AppFeesRoute: AppFeesRoute,
   AppNoticesRoute: AppNoticesRoute,
+  AppSubjectsRoute: AppSubjectsRoute,
   AppTimetableRoute: AppTimetableRoute,
   AppUsersRoute: AppUsersRoute,
 }
