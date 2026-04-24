@@ -456,13 +456,25 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
   );
 }
 
-function StudentTimetable({ rows, faculty }: { rows: Row[]; faculty: Record<string, string> }) {
+function StudentTimetable({ rows, faculty, userId }: { rows: Row[]; faculty: Record<string, string>; userId: string }) {
+  const [me, setMe] = useState<{ year: number; section: string } | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("year, section")
+        .eq("id", userId)
+        .maybeSingle();
+      if (data) setMe({ year: data.year, section: data.section });
+    })();
+  }, [userId]);
   const [dow, setDow] = useState<number>(() => {
     const d = todayDow();
     return d >= 1 && d <= 6 ? d : 1;
   });
   const dayRows = rows
-    .filter((r) => r.day_of_week === dow && r.approved)
+    .filter((r) => r.day_of_week === dow)
+    .filter((r) => !me || (r.year === me.year && r.section === me.section))
     .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""));
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
