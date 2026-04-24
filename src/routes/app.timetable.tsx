@@ -457,6 +457,7 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
 }
 
 function StudentTimetable({ rows, faculty, userId }: { rows: Row[]; faculty: Record<string, string>; userId: string }) {
+  const { profile } = useAuth();
   const [me, setMe] = useState<{ year: number; section: string } | null>(null);
   useEffect(() => {
     (async () => {
@@ -474,6 +475,7 @@ function StudentTimetable({ rows, faculty, userId }: { rows: Row[]; faculty: Rec
   });
   const dayRows = rows
     .filter((r) => r.day_of_week === dow)
+    .filter((r) => !profile?.department_id || r.department_id === profile.department_id)
     .filter((r) => !me || (r.year === me.year && r.section === me.section))
     .sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? ""));
   const now = new Date();
