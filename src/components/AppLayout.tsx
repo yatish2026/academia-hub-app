@@ -39,6 +39,7 @@ const MOBILE_NAV: NavItem[] = [
   { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/profile", label: "Account", icon: UserCircle, roles: ["admin", "hod", "faculty", "student"] },
 ];
 
 export default function AppLayout() {
