@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_LABEL } from "@/lib/types";
+import { ROLE_LABEL, type AppRole } from "@/lib/types";
+import { Award, Receipt, Users, Building2, BookOpen, Megaphone, CalendarCheck, CalendarDays, ChevronRight, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/app/profile")({
   head: () => ({ meta: [{ title: "My Profile — AcademiaHub" }] }),
