@@ -25,7 +25,7 @@ type ProfileForm = {
 };
 
 function MyProfilePage() {
-  const { userId, profile, primaryRole, refresh } = useAuth();
+  const { userId, profile, primaryRole, refresh, signOut } = useAuth();
   const [form, setForm] = useState<ProfileForm>({
     full_name: "", phone: "", dob: "", father_name: "", mother_name: "", address: "",
   });
