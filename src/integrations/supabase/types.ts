@@ -153,6 +153,42 @@ export type Database = {
           },
         ]
       }
+      marks: {
+        Row: {
+          created_at: string
+          exam_type: string
+          faculty_id: string
+          id: string
+          marks_obtained: number
+          max_marks: number
+          student_id: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          exam_type?: string
+          faculty_id: string
+          id?: string
+          marks_obtained?: number
+          max_marks?: number
+          student_id: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          exam_type?: string
+          faculty_id?: string
+          id?: string
+          marks_obtained?: number
+          max_marks?: number
+          student_id?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notices: {
         Row: {
           audience: Database["public"]["Enums"]["app_role"] | null
@@ -193,32 +229,44 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
           avatar_url: string | null
           created_at: string
           department_id: string | null
+          dob: string | null
           email: string
+          father_name: string | null
           full_name: string
           id: string
+          mother_name: string | null
           must_reset_password: boolean
           phone: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string
           department_id?: string | null
+          dob?: string | null
           email: string
+          father_name?: string | null
           full_name: string
           id: string
+          mother_name?: string | null
           must_reset_password?: boolean
           phone?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
           created_at?: string
           department_id?: string | null
+          dob?: string | null
           email?: string
+          father_name?: string | null
           full_name?: string
           id?: string
+          mother_name?: string | null
           must_reset_password?: boolean
           phone?: string | null
         }
