@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/stores/auth-store";
@@ -252,8 +252,12 @@ function UsersPage() {
               <tr><td colSpan={5} className="p-6 text-center text-sm text-muted-foreground">No users yet.</td></tr>
             )}
             {visibleRows.map((r) => (
-              <tr key={r.id}>
-                <td className="px-4 py-3 font-medium">{r.full_name}</td>
+              <tr key={r.id} className="hover:bg-muted/40 transition-colors">
+                <td className="px-4 py-3 font-medium">
+                  <Link to="/app/users/$userId" params={{ userId: r.id }} className="hover:text-primary hover:underline">
+                    {r.full_name}
+                  </Link>
+                </td>
                 <td className="px-4 py-3 text-muted-foreground">{r.email}</td>
                 <td className="px-4 py-3">
                   {(roleMap[r.id] ?? []).map((role) => (
