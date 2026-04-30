@@ -85,6 +85,12 @@ function TimetablePage() {
   useEffect(() => {
     load();
     if (canEdit) loadFacultyList();
+    // Realtime: refresh when timetable changes
+    const ch = supabase
+      .channel("timetable-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "timetable" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryRole, profile?.department_id]);
 
