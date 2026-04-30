@@ -16,11 +16,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppUsersRouteImport } from './routes/app.users'
 import { Route as AppTimetableRouteImport } from './routes/app.timetable'
 import { Route as AppSubjectsRouteImport } from './routes/app.subjects'
+import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppNoticesRouteImport } from './routes/app.notices'
 import { Route as AppFeesRouteImport } from './routes/app.fees'
 import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
+import { Route as AppUsersUserIdRouteImport } from './routes/app.users.$userId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -57,6 +59,11 @@ const AppSubjectsRoute = AppSubjectsRouteImport.update({
   path: '/subjects',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileRoute = AppProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppNoticesRoute = AppNoticesRouteImport.update({
   id: '/notices',
   path: '/notices',
@@ -82,6 +89,11 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
+  id: '/$userId',
+  path: '/$userId',
+  getParentRoute: () => AppUsersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -93,9 +105,11 @@ export interface FileRoutesByFullPath {
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
   '/app/notices': typeof AppNoticesRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/subjects': typeof AppSubjectsRoute
   '/app/timetable': typeof AppTimetableRoute
-  '/app/users': typeof AppUsersRoute
+  '/app/users': typeof AppUsersRouteWithChildren
+  '/app/users/$userId': typeof AppUsersUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -107,9 +121,11 @@ export interface FileRoutesByTo {
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
   '/app/notices': typeof AppNoticesRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/subjects': typeof AppSubjectsRoute
   '/app/timetable': typeof AppTimetableRoute
-  '/app/users': typeof AppUsersRoute
+  '/app/users': typeof AppUsersRouteWithChildren
+  '/app/users/$userId': typeof AppUsersUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -122,9 +138,11 @@ export interface FileRoutesById {
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
   '/app/notices': typeof AppNoticesRoute
+  '/app/profile': typeof AppProfileRoute
   '/app/subjects': typeof AppSubjectsRoute
   '/app/timetable': typeof AppTimetableRoute
-  '/app/users': typeof AppUsersRoute
+  '/app/users': typeof AppUsersRouteWithChildren
+  '/app/users/$userId': typeof AppUsersUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -138,9 +156,11 @@ export interface FileRouteTypes {
     | '/app/departments'
     | '/app/fees'
     | '/app/notices'
+    | '/app/profile'
     | '/app/subjects'
     | '/app/timetable'
     | '/app/users'
+    | '/app/users/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -152,9 +172,11 @@ export interface FileRouteTypes {
     | '/app/departments'
     | '/app/fees'
     | '/app/notices'
+    | '/app/profile'
     | '/app/subjects'
     | '/app/timetable'
     | '/app/users'
+    | '/app/users/$userId'
   id:
     | '__root__'
     | '/'
@@ -166,9 +188,11 @@ export interface FileRouteTypes {
     | '/app/departments'
     | '/app/fees'
     | '/app/notices'
+    | '/app/profile'
     | '/app/subjects'
     | '/app/timetable'
     | '/app/users'
+    | '/app/users/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -229,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSubjectsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/profile': {
+      id: '/app/profile'
+      path: '/profile'
+      fullPath: '/app/profile'
+      preLoaderRoute: typeof AppProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/notices': {
       id: '/app/notices'
       path: '/notices'
@@ -264,8 +295,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/users/$userId': {
+      id: '/app/users/$userId'
+      path: '/$userId'
+      fullPath: '/app/users/$userId'
+      preLoaderRoute: typeof AppUsersUserIdRouteImport
+      parentRoute: typeof AppUsersRoute
+    }
   }
 }
+
+interface AppUsersRouteChildren {
+  AppUsersUserIdRoute: typeof AppUsersUserIdRoute
+}
+
+const AppUsersRouteChildren: AppUsersRouteChildren = {
+  AppUsersUserIdRoute: AppUsersUserIdRoute,
+}
+
+const AppUsersRouteWithChildren = AppUsersRoute._addFileChildren(
+  AppUsersRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
@@ -273,9 +323,10 @@ interface AppRouteChildren {
   AppDepartmentsRoute: typeof AppDepartmentsRoute
   AppFeesRoute: typeof AppFeesRoute
   AppNoticesRoute: typeof AppNoticesRoute
+  AppProfileRoute: typeof AppProfileRoute
   AppSubjectsRoute: typeof AppSubjectsRoute
   AppTimetableRoute: typeof AppTimetableRoute
-  AppUsersRoute: typeof AppUsersRoute
+  AppUsersRoute: typeof AppUsersRouteWithChildren
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -284,9 +335,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppDepartmentsRoute: AppDepartmentsRoute,
   AppFeesRoute: AppFeesRoute,
   AppNoticesRoute: AppNoticesRoute,
+  AppProfileRoute: AppProfileRoute,
   AppSubjectsRoute: AppSubjectsRoute,
   AppTimetableRoute: AppTimetableRoute,
-  AppUsersRoute: AppUsersRoute,
+  AppUsersRoute: AppUsersRouteWithChildren,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
