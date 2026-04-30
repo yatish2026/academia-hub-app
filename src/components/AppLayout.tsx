@@ -11,6 +11,8 @@ import {
   BookOpen,
   LogOut,
   GraduationCap,
+  UserCircle,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/stores/auth-store";
 import { ROLE_LABEL, type AppRole } from "@/lib/types";
@@ -27,7 +29,9 @@ const NAV: NavItem[] = [
   { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/fees", label: "Fees", icon: Receipt, roles: ["admin", "hod", "student"] },
   { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/marks", label: "Marks", icon: Award, roles: ["admin", "hod", "faculty", "student"] },
   { to: "/app/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/profile", label: "My Profile", icon: UserCircle, roles: ["admin", "hod", "faculty", "student"] },
 ];
 
 const MOBILE_NAV: NavItem[] = [
