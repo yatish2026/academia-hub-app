@@ -85,6 +85,12 @@ function TimetablePage() {
   useEffect(() => {
     load();
     if (canEdit) loadFacultyList();
+    // Realtime: refresh when timetable changes
+    const ch = supabase
+      .channel("timetable-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "timetable" }, () => load())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryRole, profile?.department_id]);
 
@@ -323,7 +329,8 @@ function TimetablePage() {
 
 function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose: () => void; facultyId: string }) {
   const [students, setStudents] = useState<Student[]>([]);
-  const [marks, setMarks] = useState<Record<string, "present" | "absent">>({});
+  // undefined = not marked, "present" = green, "absent" = red
+  const [marks, setMarks] = useState<Record<string, "present" | "absent" | undefined>>({});
   const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -355,10 +362,9 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
         full_name: nameMap[s.id] ?? "—",
       }));
       setStudents(list);
-      // Default everyone to present
-      const def: Record<string, "present" | "absent"> = {};
-      list.forEach((s) => (def[s.id] = "present"));
-      // Load existing marks
+      // Start with NO marks; tap to set present, tap again toggles absent, again clears.
+      const def: Record<string, "present" | "absent" | undefined> = {};
+      // Load existing marks if any
       const { data: existing } = await supabase
         .from("attendance")
         .select("student_id, status")
@@ -370,16 +376,22 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
     })();
   }, [cell.id, date]);
 
-  const toggle = (id: string) =>
-    setMarks((m) => ({ ...m, [id]: m[id] === "present" ? "absent" : "present" }));
+  // Click cycles: undefined → present → absent → undefined
+  const cycle = (id: string) =>
+    setMarks((m) => {
+      const cur = m[id];
+      const next = cur === undefined ? "present" : cur === "present" ? "absent" : undefined;
+      return { ...m, [id]: next };
+    });
 
   const submit = async () => {
+    // Unmarked students are auto-marked absent on submit
     const rows = students.map((s) => ({
       student_id: s.id,
       faculty_id: facultyId,
       subject: cell.subject,
       date,
-      status: marks[s.id] ?? "present",
+      status: (marks[s.id] ?? "absent") as "present" | "absent",
     }));
     setSaving(true);
     const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "student_id,subject,date" });
@@ -391,6 +403,8 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
   };
 
   const presentCount = students.filter((s) => marks[s.id] === "present").length;
+  const absentCount = students.filter((s) => marks[s.id] === "absent").length;
+  const unmarkedCount = students.length - presentCount - absentCount;
 
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
@@ -408,9 +422,13 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
 
-          <div className="rounded-lg bg-muted/40 px-3 py-2 text-sm">
-            <span className="font-medium text-success">{presentCount}</span>
-            <span className="text-muted-foreground"> / {students.length} present · tap a student to toggle</span>
+          <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs">
+            <span className="font-medium text-success">{presentCount} present</span>
+            <span className="text-muted-foreground"> · </span>
+            <span className="font-medium text-destructive">{absentCount} absent</span>
+            <span className="text-muted-foreground"> · </span>
+            <span className="font-medium">{unmarkedCount} unmarked</span>
+            <div className="mt-1 text-[11px] text-muted-foreground">Tap to mark present (green), tap again for absent (red). Unmarked become absent on submit.</div>
           </div>
 
           {loading ? (
@@ -422,25 +440,25 @@ function MarkAttendanceSheet({ cell, onClose, facultyId }: { cell: Row; onClose:
           ) : (
             <div className="rounded-lg border divide-y">
               {students.map((s) => {
-                const status = marks[s.id] ?? "present";
-                const present = status === "present";
+                const status = marks[s.id];
+                const cls =
+                  status === "present"
+                    ? "bg-success/15 hover:bg-success/25"
+                    : status === "absent"
+                    ? "bg-destructive/15 hover:bg-destructive/25"
+                    : "bg-card hover:bg-muted/50";
                 return (
                   <button
                     key={s.id}
-                    onClick={() => toggle(s.id)}
-                    className={`flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors ${
-                      present ? "bg-success/10 hover:bg-success/15" : "bg-destructive/5 hover:bg-destructive/10"
-                    }`}
+                    onClick={() => cycle(s.id)}
+                    className={`flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors ${cls}`}
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-medium">{s.full_name}</div>
-                      <div className="text-xs text-muted-foreground">{s.roll_no}</div>
+                      <div className="truncate text-sm font-medium">{s.roll_no} · {s.full_name}</div>
                     </div>
-                    {present ? (
-                      <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />
-                    ) : (
-                      <XCircle className="h-5 w-5 shrink-0 text-destructive" />
-                    )}
+                    {status === "present" && <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />}
+                    {status === "absent" && <XCircle className="h-5 w-5 shrink-0 text-destructive" />}
+                    {!status && <Clock className="h-5 w-5 shrink-0 text-muted-foreground" />}
                   </button>
                 );
               })}
