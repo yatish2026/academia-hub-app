@@ -18,6 +18,7 @@ import { Route as AppTimetableRouteImport } from './routes/app.timetable'
 import { Route as AppSubjectsRouteImport } from './routes/app.subjects'
 import { Route as AppProfileRouteImport } from './routes/app.profile'
 import { Route as AppNoticesRouteImport } from './routes/app.notices'
+import { Route as AppMarksRouteImport } from './routes/app.marks'
 import { Route as AppFeesRouteImport } from './routes/app.fees'
 import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
@@ -69,6 +70,11 @@ const AppNoticesRoute = AppNoticesRouteImport.update({
   path: '/notices',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMarksRoute = AppMarksRouteImport.update({
+  id: '/marks',
+  path: '/marks',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppFeesRoute = AppFeesRouteImport.update({
   id: '/fees',
   path: '/fees',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
+  '/app/marks': typeof AppMarksRoute
   '/app/notices': typeof AppNoticesRoute
   '/app/profile': typeof AppProfileRoute
   '/app/subjects': typeof AppSubjectsRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
+  '/app/marks': typeof AppMarksRoute
   '/app/notices': typeof AppNoticesRoute
   '/app/profile': typeof AppProfileRoute
   '/app/subjects': typeof AppSubjectsRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
+  '/app/marks': typeof AppMarksRoute
   '/app/notices': typeof AppNoticesRoute
   '/app/profile': typeof AppProfileRoute
   '/app/subjects': typeof AppSubjectsRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/departments'
     | '/app/fees'
+    | '/app/marks'
     | '/app/notices'
     | '/app/profile'
     | '/app/subjects'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/departments'
     | '/app/fees'
+    | '/app/marks'
     | '/app/notices'
     | '/app/profile'
     | '/app/subjects'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/app/dashboard'
     | '/app/departments'
     | '/app/fees'
+    | '/app/marks'
     | '/app/notices'
     | '/app/profile'
     | '/app/subjects'
@@ -267,6 +279,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppNoticesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/marks': {
+      id: '/app/marks'
+      path: '/marks'
+      fullPath: '/app/marks'
+      preLoaderRoute: typeof AppMarksRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/fees': {
       id: '/app/fees'
       path: '/fees'
@@ -322,6 +341,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppDepartmentsRoute: typeof AppDepartmentsRoute
   AppFeesRoute: typeof AppFeesRoute
+  AppMarksRoute: typeof AppMarksRoute
   AppNoticesRoute: typeof AppNoticesRoute
   AppProfileRoute: typeof AppProfileRoute
   AppSubjectsRoute: typeof AppSubjectsRoute
@@ -334,6 +354,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppDepartmentsRoute: AppDepartmentsRoute,
   AppFeesRoute: AppFeesRoute,
+  AppMarksRoute: AppMarksRoute,
   AppNoticesRoute: AppNoticesRoute,
   AppProfileRoute: AppProfileRoute,
   AppSubjectsRoute: AppSubjectsRoute,
