@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ROLE_LABEL } from "@/lib/types";
+import { ROLE_LABEL, type AppRole } from "@/lib/types";
+import { Award, Receipt, Users, Building2, BookOpen, Megaphone, CalendarCheck, CalendarDays, ChevronRight, LogOut } from "lucide-react";
 
 export const Route = createFileRoute("/app/profile")({
   head: () => ({ meta: [{ title: "My Profile — AcademiaHub" }] }),
@@ -24,7 +25,7 @@ type ProfileForm = {
 };
 
 function MyProfilePage() {
-  const { userId, profile, primaryRole, refresh } = useAuth();
+  const { userId, profile, primaryRole, refresh, signOut } = useAuth();
   const [form, setForm] = useState<ProfileForm>({
     full_name: "", phone: "", dob: "", father_name: "", mother_name: "", address: "",
   });
@@ -145,11 +146,57 @@ function MyProfilePage() {
         </div>
       </div>
 
-      {primaryRole === "student" && (
-        <div className="mt-4 rounded-xl border bg-card p-4 text-sm">
-          <Link to="/app/marks" className="text-primary hover:underline">View my marks →</Link>
-        </div>
-      )}
+      <HubTiles role={primaryRole} />
+
+      <button
+        onClick={() => signOut()}
+        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border bg-card p-4 text-sm font-medium text-destructive hover:bg-destructive/5"
+      >
+        <LogOut className="h-4 w-4" /> Sign out
+      </button>
+    </div>
+  );
+}
+
+type Tile = { to: string; label: string; sub: string; icon: React.ComponentType<{ className?: string }>; roles: AppRole[] };
+
+const TILES: Tile[] = [
+  { to: "/app/marks", label: "Marks", sub: "Exam scores", icon: Award, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/fees", label: "Fees", sub: "Payments & dues", icon: Receipt, roles: ["admin", "hod", "student"] },
+  { to: "/app/attendance", label: "Attendance", sub: "Daily record", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/timetable", label: "Timetable", sub: "Weekly classes", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/notices", label: "Notices", sub: "Announcements", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/users", label: "Users", sub: "People directory", icon: Users, roles: ["admin", "hod", "faculty"] },
+  { to: "/app/subjects", label: "Subjects", sub: "Assign to faculty", icon: BookOpen, roles: ["admin", "hod"] },
+  { to: "/app/departments", label: "Departments", sub: "Manage depts", icon: Building2, roles: ["admin"] },
+];
+
+function HubTiles({ role }: { role: AppRole | null }) {
+  if (!role) return null;
+  const tiles = TILES.filter((t) => t.roles.includes(role));
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-3">
+      {tiles.map((t) => {
+        const Icon = t.icon;
+        return (
+          <Link
+            key={t.to}
+            to={t.to}
+            className="group flex items-center justify-between rounded-xl border bg-card p-4 transition-colors hover:bg-accent/40"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold">{t.label}</div>
+                <div className="text-[11px] text-muted-foreground">{t.sub}</div>
+              </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+          </Link>
+        );
+      })}
     </div>
   );
 }
