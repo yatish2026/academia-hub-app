@@ -141,7 +141,7 @@ export default function AppLayout() {
       </main>
 
       <nav className="md:hidden fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 backdrop-blur pb-safe">
-        <div className="grid grid-cols-4">
+        <div className="grid grid-cols-5">
           {mobileItems.map((item) => {
             const Icon = item.icon;
             const active = location.pathname.startsWith(item.to);
