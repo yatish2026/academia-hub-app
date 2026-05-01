@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 
 export const Route = createFileRoute("/app/attendance")({
   head: () => ({ meta: [{ title: "Attendance — AcademiaHub" }] }),
