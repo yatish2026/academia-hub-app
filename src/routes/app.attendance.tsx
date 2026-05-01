@@ -211,9 +211,13 @@ function AttendancePage() {
         </div>
       </div>
 
+      <div className="mt-4 rounded-xl border bg-card p-3">
+        <ScopeFilters scope={scope} onChange={setScope} />
+      </div>
+
       <div className="mt-4 rounded-xl border bg-card divide-y">
-        {students.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No students visible.</p>}
-        {students.map((s) => {
+        {filteredStudents.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No students match the filters.</p>}
+        {filteredStudents.map((s) => {
           const status = marks[s.id]; // undefined = not marked
           const wasExisting = existing[s.id];
           return (
