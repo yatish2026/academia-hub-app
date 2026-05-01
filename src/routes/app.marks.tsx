@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/marks")({
