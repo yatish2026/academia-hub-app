@@ -134,7 +134,7 @@ function FeesPage() {
               </div>
             );
           })}
-          {rows.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No fee records yet.</p>}
+          {filteredRows.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No fee records match the filters.</p>}
         </div>
       </div>
     </RoleGuard>
