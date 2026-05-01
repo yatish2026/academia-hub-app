@@ -239,6 +239,10 @@ function TimetablePage() {
         }
       />
 
+      <div className="mb-3 rounded-xl border bg-card p-3">
+        <ScopeFilters scope={scope} onChange={setScope} />
+      </div>
+
       <div className="overflow-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
           <thead className="bg-muted/50">
