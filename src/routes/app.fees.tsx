@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/RoleGuard";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 
 export const Route = createFileRoute("/app/fees")({
   head: () => ({ meta: [{ title: "Fees — AcademiaHub" }] }),
