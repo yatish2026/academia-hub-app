@@ -37,6 +37,7 @@ function MarksPage() {
   const [editing, setEditing] = useState<Mark | null>(null);
   const [filterStudent, setFilterStudent] = useState<string>("all");
   const [filterSubject, setFilterSubject] = useState<string>("all");
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
   const [form, setForm] = useState({
     student_id: "",
     subject: "",
