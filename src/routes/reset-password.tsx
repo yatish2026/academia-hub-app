@@ -33,7 +33,12 @@ function ResetPasswordPage() {
     const { error } = await supabase.auth.updateUser({ password: pw });
     if (error) {
       setLoading(false);
-      return toast.error(error.message);
+      const msg = /pwned|leaked|compromis/i.test(error.message)
+        ? "This password has appeared in known data breaches. Please choose a different one."
+        : /weak|strength/i.test(error.message)
+        ? "Password is too weak. Try a longer mix of letters, numbers, and symbols."
+        : error.message;
+      return toast.error(msg);
     }
     await completePasswordReset();
     setLoading(false);
