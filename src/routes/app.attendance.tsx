@@ -50,7 +50,7 @@ function AttendancePage() {
         if (f?.subjects?.[0]) setSubject(f.subjects[0]);
       }
       // dept-scoped students for faculty/HOD; admin sees all
-      let q = supabase.from("students").select("id, roll_no, section, profiles(full_name)").order("roll_no");
+      let q = supabase.from("students").select("id, roll_no, section, year, department_id, profiles(full_name)").order("roll_no");
       if ((primaryRole === "faculty" || primaryRole === "hod") && profile?.department_id) {
         q = q.eq("department_id", profile.department_id);
       }
