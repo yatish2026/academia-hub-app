@@ -93,9 +93,12 @@ function FeesPage() {
         <StatCard label="Collected" value={`₹${paidAll.toLocaleString()}`} accent="success" />
         <StatCard label="Outstanding" value={`₹${dueAll.toLocaleString()}`} accent="destructive" />
       </div>
+      <div className="mt-4 rounded-xl border bg-card p-3">
+        <ScopeFilters scope={scope} onChange={setScope} />
+      </div>
       <div className="mt-4 overflow-hidden rounded-xl border bg-card">
         <div className="divide-y">
-          {rows.map((r) => {
+          {filteredRows.map((r) => {
             const e = edit[r.id];
             return (
               <div key={r.id} className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
