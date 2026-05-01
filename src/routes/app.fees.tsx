@@ -36,7 +36,7 @@ function FeesPage() {
       const { data } = await supabase.from("fees").select("*").eq("student_id", userId);
       setRows((data as FeeRow[]) ?? []);
     } else {
-      const { data } = await supabase.from("fees").select("*, students(roll_no, profiles(full_name))").order("updated_at", { ascending: false });
+      const { data } = await supabase.from("fees").select("*, students(roll_no, section, year, department_id, profiles(full_name))").order("updated_at", { ascending: false });
       setRows((data as unknown as FeeRow[]) ?? []);
     }
   };
