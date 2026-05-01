@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { CheckCircle2, Clock, Plus, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 
 export const Route = createFileRoute("/app/timetable")({
   head: () => ({ meta: [{ title: "Timetable — AcademiaHub" }] }),
