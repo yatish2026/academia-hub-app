@@ -150,9 +150,12 @@ function TimetablePage() {
 
   // Faculty / HOD / Admin: weekly grid
   // Faculty sees ONLY their own classes; HOD/Admin see whole department
-  const visibleRows = primaryRole === "faculty"
+  let visibleRows = primaryRole === "faculty"
     ? rows.filter((r) => r.faculty_id === userId)
     : rows;
+  if (scope.department_id !== "all") visibleRows = visibleRows.filter((r) => r.department_id === scope.department_id);
+  if (scope.year !== "all") visibleRows = visibleRows.filter((r) => r.year === Number(scope.year));
+  if (scope.section !== "all") visibleRows = visibleRows.filter((r) => r.section === scope.section);
 
   const slotKeys = Array.from(
     new Set(visibleRows.map((r) => `${r.start_time ?? ""}|${r.end_time ?? ""}`).filter((k) => k !== "|"))
