@@ -171,9 +171,15 @@ function AttendancePage() {
 
   // ===== FACULTY / HOD / ADMIN VIEW =====
   const canMark = primaryRole === "faculty";
+  const filteredStudents = students.filter((s) => {
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  });
   const dirty = useMemo(
-    () => students.some((s) => marks[s.id] && marks[s.id] !== existing[s.id]),
-    [marks, existing, students]
+    () => filteredStudents.some((s) => marks[s.id] && marks[s.id] !== existing[s.id]),
+    [marks, existing, filteredStudents]
   );
 
   return (
