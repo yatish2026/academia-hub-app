@@ -26,7 +26,7 @@ type Mark = {
   marks_obtained: number;
   max_marks: number;
 };
-type StudentLite = { id: string; roll_no: string; section: string; year: number; full_name: string };
+type StudentLite = { id: string; roll_no: string; section: string; year: number; department_id: string; full_name: string };
 
 function MarksPage() {
   const { primaryRole, profile, userId } = useAuth();
