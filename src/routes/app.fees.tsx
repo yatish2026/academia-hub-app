@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { RoleGuard } from "@/components/RoleGuard";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 
 export const Route = createFileRoute("/app/fees")({
   head: () => ({ meta: [{ title: "Fees — AcademiaHub" }] }),
@@ -21,27 +22,37 @@ type FeeRow = {
   paid_amount: number;
   due_amount: number;
   semester: string;
-  students?: { roll_no: string; profiles: { full_name: string } | null } | null;
+  students?: { roll_no: string; section: string; year: number; department_id: string; profiles: { full_name: string } | null } | null;
 };
 
 function FeesPage() {
   const { primaryRole, userId } = useAuth();
   const [rows, setRows] = useState<FeeRow[]>([]);
   const [edit, setEdit] = useState<Record<string, { total: string; paid: string }>>({});
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
 
   const load = async () => {
     if (primaryRole === "student" && userId) {
       const { data } = await supabase.from("fees").select("*").eq("student_id", userId);
       setRows((data as FeeRow[]) ?? []);
     } else {
-      const { data } = await supabase.from("fees").select("*, students(roll_no, profiles(full_name))").order("updated_at", { ascending: false });
+      const { data } = await supabase.from("fees").select("*, students(roll_no, section, year, department_id, profiles(full_name))").order("updated_at", { ascending: false });
       setRows((data as unknown as FeeRow[]) ?? []);
     }
   };
   useEffect(() => { load(); }, [primaryRole, userId]);
 
-  const totalAll = rows.reduce((a, r) => a + Number(r.total_fee), 0);
-  const paidAll = rows.reduce((a, r) => a + Number(r.paid_amount), 0);
+  const filteredRows = primaryRole === "student" ? rows : rows.filter((r) => {
+    const s = r.students;
+    if (!s) return scope.department_id === "all" && scope.year === "all" && scope.section === "all";
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  });
+
+  const totalAll = filteredRows.reduce((a, r) => a + Number(r.total_fee), 0);
+  const paidAll = filteredRows.reduce((a, r) => a + Number(r.paid_amount), 0);
   const dueAll = totalAll - paidAll;
 
   const save = async (id: string) => {
@@ -82,9 +93,12 @@ function FeesPage() {
         <StatCard label="Collected" value={`₹${paidAll.toLocaleString()}`} accent="success" />
         <StatCard label="Outstanding" value={`₹${dueAll.toLocaleString()}`} accent="destructive" />
       </div>
+      <div className="mt-4 rounded-xl border bg-card p-3">
+        <ScopeFilters scope={scope} onChange={setScope} />
+      </div>
       <div className="mt-4 overflow-hidden rounded-xl border bg-card">
         <div className="divide-y">
-          {rows.map((r) => {
+          {filteredRows.map((r) => {
             const e = edit[r.id];
             return (
               <div key={r.id} className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-[1fr_auto] sm:items-center">
@@ -120,7 +134,7 @@ function FeesPage() {
               </div>
             );
           })}
-          {rows.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No fee records yet.</p>}
+          {filteredRows.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No fee records match the filters.</p>}
         </div>
       </div>
     </RoleGuard>

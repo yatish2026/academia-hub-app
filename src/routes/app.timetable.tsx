@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { CheckCircle2, Clock, Plus, Trash2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 
 export const Route = createFileRoute("/app/timetable")({
   head: () => ({ meta: [{ title: "Timetable — AcademiaHub" }] }),
@@ -41,6 +42,7 @@ function TimetablePage() {
   const [facultyList, setFacultyList] = useState<FacultyOpt[]>([]);
   const [open, setOpen] = useState(false);
   const [markCell, setMarkCell] = useState<Row | null>(null);
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
   const [form, setForm] = useState({
     day_of_week: "1",
     start_time: "09:00",
@@ -148,9 +150,12 @@ function TimetablePage() {
 
   // Faculty / HOD / Admin: weekly grid
   // Faculty sees ONLY their own classes; HOD/Admin see whole department
-  const visibleRows = primaryRole === "faculty"
+  let visibleRows = primaryRole === "faculty"
     ? rows.filter((r) => r.faculty_id === userId)
     : rows;
+  if (scope.department_id !== "all") visibleRows = visibleRows.filter((r) => r.department_id === scope.department_id);
+  if (scope.year !== "all") visibleRows = visibleRows.filter((r) => r.year === Number(scope.year));
+  if (scope.section !== "all") visibleRows = visibleRows.filter((r) => r.section === scope.section);
 
   const slotKeys = Array.from(
     new Set(visibleRows.map((r) => `${r.start_time ?? ""}|${r.end_time ?? ""}`).filter((k) => k !== "|"))
@@ -233,6 +238,10 @@ function TimetablePage() {
           </div>
         }
       />
+
+      <div className="mb-3 rounded-xl border bg-card p-3">
+        <ScopeFilters scope={scope} onChange={setScope} />
+      </div>
 
       <div className="overflow-auto rounded-xl border bg-card">
         <table className="w-full text-sm">

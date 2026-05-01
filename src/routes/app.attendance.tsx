@@ -10,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 
 export const Route = createFileRoute("/app/attendance")({
   head: () => ({ meta: [{ title: "Attendance — AcademiaHub" }] }),
   component: AttendancePage,
 });
 
-type StudentRow = { id: string; roll_no: string; section: string; profiles: { full_name: string } | null };
+type StudentRow = { id: string; roll_no: string; section: string; year: number; department_id: string; profiles: { full_name: string } | null };
 
 function AttendancePage() {
   const { primaryRole, userId, profile } = useAuth();
@@ -28,6 +29,7 @@ function AttendancePage() {
   const [existing, setExisting] = useState<Record<string, "present" | "absent">>({});
   const [myAttendance, setMyAttendance] = useState<{ subject: string; date: string; status: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
 
   // load students/subjects on role change
   useEffect(() => {
@@ -48,7 +50,7 @@ function AttendancePage() {
         if (f?.subjects?.[0]) setSubject(f.subjects[0]);
       }
       // dept-scoped students for faculty/HOD; admin sees all
-      let q = supabase.from("students").select("id, roll_no, section, profiles(full_name)").order("roll_no");
+      let q = supabase.from("students").select("id, roll_no, section, year, department_id, profiles(full_name)").order("roll_no");
       if ((primaryRole === "faculty" || primaryRole === "hod") && profile?.department_id) {
         q = q.eq("department_id", profile.department_id);
       }
@@ -169,9 +171,15 @@ function AttendancePage() {
 
   // ===== FACULTY / HOD / ADMIN VIEW =====
   const canMark = primaryRole === "faculty";
+  const filteredStudents = students.filter((s) => {
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  });
   const dirty = useMemo(
-    () => students.some((s) => marks[s.id] && marks[s.id] !== existing[s.id]),
-    [marks, existing, students]
+    () => filteredStudents.some((s) => marks[s.id] && marks[s.id] !== existing[s.id]),
+    [marks, existing, filteredStudents]
   );
 
   return (
@@ -203,9 +211,13 @@ function AttendancePage() {
         </div>
       </div>
 
+      <div className="mt-4 rounded-xl border bg-card p-3">
+        <ScopeFilters scope={scope} onChange={setScope} />
+      </div>
+
       <div className="mt-4 rounded-xl border bg-card divide-y">
-        {students.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No students visible.</p>}
-        {students.map((s) => {
+        {filteredStudents.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No students match the filters.</p>}
+        {filteredStudents.map((s) => {
           const status = marks[s.id]; // undefined = not marked
           const wasExisting = existing[s.id];
           return (

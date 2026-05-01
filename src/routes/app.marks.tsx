@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/marks")({
@@ -25,7 +26,7 @@ type Mark = {
   marks_obtained: number;
   max_marks: number;
 };
-type StudentLite = { id: string; roll_no: string; section: string; year: number; full_name: string };
+type StudentLite = { id: string; roll_no: string; section: string; year: number; department_id: string; full_name: string };
 
 function MarksPage() {
   const { primaryRole, profile, userId } = useAuth();
@@ -36,6 +37,7 @@ function MarksPage() {
   const [editing, setEditing] = useState<Mark | null>(null);
   const [filterStudent, setFilterStudent] = useState<string>("all");
   const [filterSubject, setFilterSubject] = useState<string>("all");
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
   const [form, setForm] = useState({
     student_id: "",
     subject: "",
@@ -54,7 +56,7 @@ function MarksPage() {
     setMarks((m as Mark[]) ?? []);
 
     if (canManage) {
-      let sq = supabase.from("students").select("id, roll_no, section, year").order("roll_no");
+      let sq = supabase.from("students").select("id, roll_no, section, year, department_id").order("roll_no");
       if ((primaryRole === "faculty" || primaryRole === "hod") && profile?.department_id) {
         sq = sq.eq("department_id", profile.department_id);
       }
@@ -127,16 +129,26 @@ function MarksPage() {
 
   const studentName = (id: string) => students.find((s) => s.id === id)?.full_name ?? "—";
 
+  // Students within scope (used to constrain marks visibility for managers)
+  const scopedStudents = useMemo(() => students.filter((s) => {
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  }), [students, scope]);
+  const scopedIds = useMemo(() => new Set(scopedStudents.map((s) => s.id)), [scopedStudents]);
+
   // Student grouped view
   const grouped = useMemo(() => {
     const g: Record<string, Mark[]> = {};
     for (const m of marks) {
+      if (canManage && !scopedIds.has(m.student_id)) continue;
       if (filterStudent !== "all" && m.student_id !== filterStudent) continue;
       if (filterSubject !== "all" && m.subject !== filterSubject) continue;
       (g[m.subject] ??= []).push(m);
     }
     return g;
-  }, [marks, filterStudent, filterSubject]);
+  }, [marks, filterStudent, filterSubject, canManage, scopedIds]);
 
   return (
     <div>
@@ -186,22 +198,27 @@ function MarksPage() {
       />
 
       {canManage && (
-        <div className="mb-3 grid gap-2 sm:grid-cols-2">
-          <Select value={filterStudent} onValueChange={setFilterStudent}>
-            <SelectTrigger><SelectValue placeholder="All students" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All students</SelectItem>
-              {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.roll_no} · {s.full_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterSubject} onValueChange={setFilterSubject}>
-            <SelectTrigger><SelectValue placeholder="All subjects" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All subjects</SelectItem>
-              {Array.from(new Set(marks.map((m) => m.subject))).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div className="mb-3 rounded-xl border bg-card p-3">
+            <ScopeFilters scope={scope} onChange={setScope} />
+          </div>
+          <div className="mb-3 grid gap-2 sm:grid-cols-2">
+            <Select value={filterStudent} onValueChange={setFilterStudent}>
+              <SelectTrigger><SelectValue placeholder="All students" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All students</SelectItem>
+                {scopedStudents.map((s) => <SelectItem key={s.id} value={s.id}>{s.roll_no} · {s.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterSubject} onValueChange={setFilterSubject}>
+              <SelectTrigger><SelectValue placeholder="All subjects" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All subjects</SelectItem>
+                {Array.from(new Set(marks.map((m) => m.subject))).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </>
       )}
 
       {Object.keys(grouped).length === 0 ? (
