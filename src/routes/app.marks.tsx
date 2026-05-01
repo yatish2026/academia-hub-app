@@ -56,7 +56,7 @@ function MarksPage() {
     setMarks((m as Mark[]) ?? []);
 
     if (canManage) {
-      let sq = supabase.from("students").select("id, roll_no, section, year").order("roll_no");
+      let sq = supabase.from("students").select("id, roll_no, section, year, department_id").order("roll_no");
       if ((primaryRole === "faculty" || primaryRole === "hod") && profile?.department_id) {
         sq = sq.eq("department_id", profile.department_id);
       }
