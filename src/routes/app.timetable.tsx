@@ -42,6 +42,7 @@ function TimetablePage() {
   const [facultyList, setFacultyList] = useState<FacultyOpt[]>([]);
   const [open, setOpen] = useState(false);
   const [markCell, setMarkCell] = useState<Row | null>(null);
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
   const [form, setForm] = useState({
     day_of_week: "1",
     start_time: "09:00",
