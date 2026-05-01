@@ -17,7 +17,7 @@ export const Route = createFileRoute("/app/attendance")({
   component: AttendancePage,
 });
 
-type StudentRow = { id: string; roll_no: string; section: string; profiles: { full_name: string } | null };
+type StudentRow = { id: string; roll_no: string; section: string; year: number; department_id: string; profiles: { full_name: string } | null };
 
 function AttendancePage() {
   const { primaryRole, userId, profile } = useAuth();
@@ -29,6 +29,7 @@ function AttendancePage() {
   const [existing, setExisting] = useState<Record<string, "present" | "absent">>({});
   const [myAttendance, setMyAttendance] = useState<{ subject: string; date: string; status: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
 
   // load students/subjects on role change
   useEffect(() => {
