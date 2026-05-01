@@ -129,16 +129,26 @@ function MarksPage() {
 
   const studentName = (id: string) => students.find((s) => s.id === id)?.full_name ?? "—";
 
+  // Students within scope (used to constrain marks visibility for managers)
+  const scopedStudents = useMemo(() => students.filter((s) => {
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  }), [students, scope]);
+  const scopedIds = useMemo(() => new Set(scopedStudents.map((s) => s.id)), [scopedStudents]);
+
   // Student grouped view
   const grouped = useMemo(() => {
     const g: Record<string, Mark[]> = {};
     for (const m of marks) {
+      if (canManage && !scopedIds.has(m.student_id)) continue;
       if (filterStudent !== "all" && m.student_id !== filterStudent) continue;
       if (filterSubject !== "all" && m.subject !== filterSubject) continue;
       (g[m.subject] ??= []).push(m);
     }
     return g;
-  }, [marks, filterStudent, filterSubject]);
+  }, [marks, filterStudent, filterSubject, canManage, scopedIds]);
 
   return (
     <div>
