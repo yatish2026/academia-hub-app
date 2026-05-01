@@ -42,8 +42,17 @@ function FeesPage() {
   };
   useEffect(() => { load(); }, [primaryRole, userId]);
 
-  const totalAll = rows.reduce((a, r) => a + Number(r.total_fee), 0);
-  const paidAll = rows.reduce((a, r) => a + Number(r.paid_amount), 0);
+  const filteredRows = primaryRole === "student" ? rows : rows.filter((r) => {
+    const s = r.students;
+    if (!s) return scope.department_id === "all" && scope.year === "all" && scope.section === "all";
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  });
+
+  const totalAll = filteredRows.reduce((a, r) => a + Number(r.total_fee), 0);
+  const paidAll = filteredRows.reduce((a, r) => a + Number(r.paid_amount), 0);
   const dueAll = totalAll - paidAll;
 
   const save = async (id: string) => {
