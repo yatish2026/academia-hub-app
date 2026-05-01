@@ -198,22 +198,27 @@ function MarksPage() {
       />
 
       {canManage && (
-        <div className="mb-3 grid gap-2 sm:grid-cols-2">
-          <Select value={filterStudent} onValueChange={setFilterStudent}>
-            <SelectTrigger><SelectValue placeholder="All students" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All students</SelectItem>
-              {students.map((s) => <SelectItem key={s.id} value={s.id}>{s.roll_no} · {s.full_name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterSubject} onValueChange={setFilterSubject}>
-            <SelectTrigger><SelectValue placeholder="All subjects" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All subjects</SelectItem>
-              {Array.from(new Set(marks.map((m) => m.subject))).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+        <>
+          <div className="mb-3 rounded-xl border bg-card p-3">
+            <ScopeFilters scope={scope} onChange={setScope} />
+          </div>
+          <div className="mb-3 grid gap-2 sm:grid-cols-2">
+            <Select value={filterStudent} onValueChange={setFilterStudent}>
+              <SelectTrigger><SelectValue placeholder="All students" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All students</SelectItem>
+                {scopedStudents.map((s) => <SelectItem key={s.id} value={s.id}>{s.roll_no} · {s.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterSubject} onValueChange={setFilterSubject}>
+              <SelectTrigger><SelectValue placeholder="All subjects" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All subjects</SelectItem>
+                {Array.from(new Set(marks.map((m) => m.subject))).map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </>
       )}
 
       {Object.keys(grouped).length === 0 ? (
