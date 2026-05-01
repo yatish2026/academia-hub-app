@@ -22,13 +22,14 @@ type FeeRow = {
   paid_amount: number;
   due_amount: number;
   semester: string;
-  students?: { roll_no: string; profiles: { full_name: string } | null } | null;
+  students?: { roll_no: string; section: string; year: number; department_id: string; profiles: { full_name: string } | null } | null;
 };
 
 function FeesPage() {
   const { primaryRole, userId } = useAuth();
   const [rows, setRows] = useState<FeeRow[]>([]);
   const [edit, setEdit] = useState<Record<string, { total: string; paid: string }>>({});
+  const [scope, setScope] = useState<Scope>(ALL_SCOPE);
 
   const load = async () => {
     if (primaryRole === "student" && userId) {
