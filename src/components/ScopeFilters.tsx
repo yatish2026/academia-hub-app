@@ -41,15 +41,13 @@ export function ScopeFilters({
     })();
   }, []);
 
-  // Lock dept for hod/faculty
+  // Auto-select user's department if not admin
   useEffect(() => {
-    if ((primaryRole === "hod" || primaryRole === "faculty") && profile?.department_id) {
-      if (scope.department_id !== profile.department_id) {
-        onChange({ ...scope, department_id: profile.department_id });
-      }
+    if (primaryRole !== "admin" && profile?.department_id && scope.department_id === "all") {
+      onChange({ ...scope, department_id: profile.department_id });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryRole, profile?.department_id]);
+  }, [primaryRole, profile?.department_id, scope.department_id, onChange]);
+
 
   const lockDept = primaryRole !== "admin";
 

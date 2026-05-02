@@ -1,48 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/stores/auth-store";
 import { PageHeader, StatCard } from "@/components/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
 import { format } from "date-fns";
 import { CheckCircle2, XCircle, Clock, ChevronRight } from "lucide-react";
 import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
-import { DAYS, todayDow } from "@/lib/types";
+import { DAYS, todayDow, type TimetableClass } from "@/lib/types";
+import { MarkAttendanceSheet } from "@/components/MarkAttendanceSheet";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/app/attendance")({
   head: () => ({ meta: [{ title: "Attendance — AcademiaHub" }] }),
   component: AttendancePage,
 });
 
-type StudentRow = { id: string; roll_no: string; section: string; year: number; department_id: string; profiles: { full_name: string } | null };
-type TimetableClass = { id: string; subject: string; section: string; year: number; department_id: string; start_time: string | null; end_time: string | null };
-
 function AttendancePage() {
   const { primaryRole, userId, profile } = useAuth();
-  const [students, setStudents] = useState<StudentRow[]>([]);
-  const [subject, setSubject] = useState("");
-  const [subjects, setSubjects] = useState<string[]>([]);
-  const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [marks, setMarks] = useState<Record<string, "present" | "absent">>({});
-  const [existing, setExisting] = useState<Record<string, "present" | "absent">>({});
   const [myAttendance, setMyAttendance] = useState<{ subject: string; date: string; status: string }[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [markCell, setMarkCell] = useState<TimetableClass | null>(null);
   const [scope, setScope] = useState<Scope>(ALL_SCOPE);
+  const [todayClasses, setTodayClasses] = useState<TimetableClass[]>([]);
+  const [searchStudents, setSearchStudents] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Faculty: today's classes from timetable
-  const [todayClasses, setTodayClasses] = useState<TimetableClass[]>([]);
-  const [selectedClass, setSelectedClass] = useState<TimetableClass | null>(null);
-
-  // Load today's classes for faculty
   useEffect(() => {
     if (primaryRole !== "faculty" || !userId) return;
     (async () => {
-      const dow = todayDow(); // 0=Sun, 1=Mon..6=Sat
-      if (dow === 0) { setTodayClasses([]); return; } // No classes on Sunday
+      const dow = todayDow();
+      if (dow === 0) { setTodayClasses([]); return; }
       const { data } = await supabase
         .from("timetable")
         .select("id, subject, section, year, department_id, start_time, end_time")
@@ -54,10 +41,10 @@ function AttendancePage() {
     })();
   }, [primaryRole, userId]);
 
-  // load students/subjects on role change
+  // load my attendance (student view)
   useEffect(() => {
-    (async () => {
-      if (primaryRole === "student" && userId) {
+    if (primaryRole === "student" && userId) {
+      (async () => {
         const { data } = await supabase
           .from("attendance")
           .select("subject, date, status")
@@ -65,78 +52,56 @@ function AttendancePage() {
           .order("date", { ascending: false })
           .limit(100);
         setMyAttendance(data ?? []);
-        return;
-      }
-      if (primaryRole === "faculty" && userId) {
-        const { data: f } = await supabase.from("faculty").select("subjects").eq("id", userId).maybeSingle();
-        setSubjects(f?.subjects ?? []);
-      }
-      // dept-scoped students for faculty/HOD; admin sees all
-      let q = supabase.from("students").select("id, roll_no, section, year, department_id, profiles(full_name)").order("roll_no");
-      if ((primaryRole === "faculty" || primaryRole === "hod") && profile?.department_id) {
-        q = q.eq("department_id", profile.department_id);
-      }
-      const { data: st } = await q;
-      setStudents((st as unknown as StudentRow[]) ?? []);
-    })();
+      })();
+    }
   }, [primaryRole, userId, profile?.department_id]);
 
-  // When faculty selects a class, set subject and scope
+  // Fetch students for manual search list
   useEffect(() => {
-    if (selectedClass) {
-      setSubject(selectedClass.subject);
-      setScope({
-        department_id: selectedClass.department_id,
-        year: String(selectedClass.year),
-        section: selectedClass.section,
-      });
-    }
-  }, [selectedClass]);
-
-  // load existing attendance for that subject+date
-  useEffect(() => {
+    if (primaryRole === "student" || !userId) return;
     (async () => {
-      if (primaryRole === "student" || !subject || !date) return;
-      const { data } = await supabase.from("attendance").select("student_id, status").eq("subject", subject).eq("date", date);
-      const map: Record<string, "present" | "absent"> = {};
-      for (const r of data ?? []) map[r.student_id] = r.status as "present" | "absent";
-      setExisting(map);
-      setMarks(map);
+      setSearchLoading(true);
+      let q = supabase.from("students").select("id, roll_no, section, year, department_id").order("roll_no");
+      
+      if (scope.department_id !== "all") q = q.eq("department_id", scope.department_id);
+      if (scope.year !== "all") q = q.eq("year", Number(scope.year));
+      if (scope.section !== "all") q = q.eq("section", scope.section);
+      
+      const { data: studs } = await q;
+      
+      const ids = (studs ?? []).map(s => s.id);
+      const nameMap: Record<string, string> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", ids);
+        for (const p of profs ?? []) nameMap[p.id] = p.full_name;
+      }
+
+      setSearchStudents((studs ?? []).map(s => ({
+        ...s,
+        profiles: { full_name: nameMap[s.id] ?? "—" }
+      })));
+      setSearchLoading(false);
     })();
-  }, [subject, date, primaryRole]);
+  }, [primaryRole, userId, scope.department_id, scope.year, scope.section]);
 
-  const setStatus = (id: string, status: "present" | "absent") =>
-    setMarks((m) => ({ ...m, [id]: status }));
+  const fmtTime = (t: string | null) => {
+    if (!t) return "";
+    const [h, m] = t.split(":");
+    const hh = Number(h);
+    const h12 = ((hh + 11) % 12) + 1;
+    return `${h12}:${m ?? "00"} ${hh < 12 ? "AM" : "PM"}`;
+  };
 
-  const filteredStudents = students.filter((s) => {
-    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
-    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
-    if (scope.section !== "all" && s.section !== scope.section) return false;
-    return true;
-  });
-
-  const submit = async () => {
-    if (!subject || !date || !userId) return toast.error("Pick a subject and date");
-    // Auto-mark unmarked students as absent
-    const rows = filteredStudents.map((s) => ({
-      student_id: s.id,
-      faculty_id: userId,
-      subject,
-      date,
-      status: marks[s.id] || "absent",
-    }));
-    if (rows.length === 0) return toast.error("No students to mark");
-    setSaving(true);
-    const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "student_id,subject,date" });
-    setSaving(false);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(`Saved ${rows.length} entries`);
-      const newMap: Record<string, "present" | "absent"> = {};
-      for (const r of rows) newMap[r.student_id] = r.status as "present" | "absent";
-      setExisting(newMap);
-      setMarks(newMap);
-    }
+  const openManualSheet = (s: any) => {
+    setMarkCell({
+      id: "manual-" + s.id,
+      subject: "General",
+      department_id: s.department_id,
+      section: s.section,
+      year: s.year,
+      start_time: null,
+      end_time: null
+    } as any);
   };
 
   // ===== STUDENT VIEW =====
@@ -208,134 +173,139 @@ function AttendancePage() {
     );
   }
 
-  // ===== FACULTY VIEW — show today's classes first =====
+  // ===== FACULTY / HOD / ADMIN VIEW =====
   const canMark = primaryRole === "faculty";
-  const dirty = useMemo(
-    () => filteredStudents.some((s) => (marks[s.id] || "absent") !== (existing[s.id] || undefined)),
-    [marks, existing, filteredStudents]
-  );
-
-  const fmtTime = (t: string | null) => {
-    if (!t) return "";
-    const [h, m] = t.split(":");
-    const hh = Number(h);
-    const h12 = ((hh + 11) % 12) + 1;
-    return `${h12}:${m ?? "00"} ${hh < 12 ? "AM" : "PM"}`;
-  };
 
   return (
     <div>
-      <PageHeader title="Attendance" description={canMark ? "Select a class to mark attendance" : "View attendance"} />
+      <PageHeader title="Attendance" description={canMark ? "Select a class to mark attendance" : "View attendance records"} />
 
       {/* Faculty: Today's classes cards */}
-      {canMark && todayClasses.length > 0 && (
-        <div className="mb-4">
-          <h2 className="mb-2 text-sm font-medium">Today's classes ({DAYS[todayDow()]})</h2>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {todayClasses.map((cls) => {
-              const isSelected = selectedClass?.id === cls.id;
-              return (
+      {canMark && (
+        <div className="mb-6">
+          <h2 className="mb-3 text-sm font-medium">Today's classes ({DAYS[todayDow()]})</h2>
+          {todayClasses.length === 0 ? (
+            <div className="rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+              No classes scheduled for today ({DAYS[todayDow()] || "Sunday"}).
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {todayClasses.map((cls) => (
                 <button
                   key={cls.id}
-                  onClick={() => setSelectedClass(cls)}
-                  className={`rounded-xl border p-3 text-left transition-colors ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "bg-card hover:bg-muted/40"}`}
+                  onClick={() => setMarkCell(cls)}
+                  className="group relative flex flex-col rounded-xl border bg-card p-4 text-left transition-all hover:border-primary hover:shadow-md"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="font-medium text-sm">{cls.subject}</div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="font-semibold text-foreground group-hover:text-primary">{cls.subject}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Sec {cls.section} · Year {cls.year}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground/40 group-hover:text-primary" />
                   </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Sec {cls.section} · Year {cls.year} · {fmtTime(cls.start_time)} – {fmtTime(cls.end_time)}
+                  <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {fmtTime(cls.start_time)} – {fmtTime(cls.end_time)}
+                  </div>
+                  <div className="mt-3 text-[10px] font-bold uppercase tracking-wider text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                    Tap to mark attendance →
                   </div>
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-      {canMark && todayClasses.length === 0 && (
-        <div className="mb-4 rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
-          No classes scheduled for today ({DAYS[todayDow()] || "Sunday"}).
-        </div>
-      )}
-
-      {/* Manual subject/date picker + filters for HOD/Admin or fallback */}
-      <div className="rounded-xl border bg-card p-4 shadow-soft">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label>Subject</Label>
-            <Select value={subject} onValueChange={(v) => { setSubject(v); setSelectedClass(null); }}>
-              <SelectTrigger><SelectValue placeholder="Pick subject" /></SelectTrigger>
-              <SelectContent>
-                {subjects.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                {subjects.length === 0 && <SelectItem value="General">General</SelectItem>}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Date</Label>
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          </div>
-          {canMark && (
-            <div className="flex items-end">
-              <Button className="w-full" onClick={submit} disabled={saving || filteredStudents.length === 0}>
-                {saving ? "Saving…" : "Save attendance"}
-              </Button>
+              ))}
             </div>
           )}
         </div>
-      </div>
+      )}
 
-      <div className="mt-4 rounded-xl border bg-card p-3">
-        <ScopeFilters scope={scope} onChange={setScope} />
-      </div>
-
-      <div className="mt-4 rounded-xl border bg-card divide-y">
-        {filteredStudents.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No students match the filters.</p>}
-        {filteredStudents.map((s) => {
-          const status = marks[s.id];
-          const wasExisting = existing[s.id];
-          return (
-            <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{s.profiles?.full_name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {s.roll_no} · Sec {s.section} · Y{s.year}
-                  {wasExisting && <span className="ml-2 text-[10px] uppercase tracking-wide">(saved)</span>}
-                </div>
-              </div>
-              {canMark ? (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setStatus(s.id, "present")}
-                    className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                      status === "present" ? "bg-success text-success-foreground" : "bg-success/10 text-success hover:bg-success/20"
-                    }`}
-                    aria-label="Mark present"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setStatus(s.id, "absent")}
-                    className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                      status === "absent" ? "bg-destructive text-destructive-foreground" : "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                    }`}
-                    aria-label="Mark absent"
-                  >
-                    <XCircle className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <span className={`text-xs font-medium ${
-                  status === "present" ? "text-success" : status === "absent" ? "text-destructive" : "text-muted-foreground"
-                }`}>
-                  {status ? status : "Not marked"}
-                </span>
-              )}
+      {/* Scope Filters and Search Results — HOD and Admin ONLY */}
+      {(primaryRole === "hod" || primaryRole === "admin") && (
+        <>
+          <div className="mb-4 rounded-xl border bg-card p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground/60">Find students by department/class</div>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-primary"
+                onClick={() => setScope(ALL_SCOPE)}
+              >
+                Reset Filters
+              </Button>
             </div>
-          );
-        })}
-      </div>
+            <ScopeFilters scope={scope} onChange={setScope} />
+          </div>
+
+          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+            <div className="bg-muted/50 px-4 py-2 border-b">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">Search Results</div>
+            </div>
+            {searchLoading ? (
+              <div className="p-12 text-center">
+                <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                <p className="mt-2 text-sm text-muted-foreground">Searching students...</p>
+              </div>
+            ) : searchStudents.length === 0 ? (
+              <div className="p-12 text-center text-sm text-muted-foreground">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-muted-foreground/20 mb-2" />
+                No students found matching these filters.
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30 border-b">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Roll No</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Details</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {searchStudents.map((s) => (
+                    <tr key={s.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="px-4 py-3 font-mono text-xs">{s.roll_no}</td>
+                      <td className="px-4 py-3 font-medium">{s.profiles?.full_name}</td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">Sec {s.section} · Year {s.year}</td>
+                      <td className="px-4 py-3 text-right">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-7 text-[11px]"
+                          onClick={() => openManualSheet(s)}
+                        >
+                          Mark Attendance
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+
+      {canMark && (
+        <div className="mt-8 rounded-xl border bg-card p-8 text-center bg-muted/5">
+          <div className="mb-3 flex justify-center">
+            <div className="rounded-full bg-background p-4 shadow-sm">
+              <CheckCircle2 className="h-8 w-8 text-primary/40" />
+            </div>
+          </div>
+          <p className="text-sm font-medium text-foreground">Select a class card at the top</p>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto">Click any of today's classes to record attendance for that group.</p>
+        </div>
+      )}
+
+      {/* Sheet for marking attendance */}
+      {markCell && (
+        <MarkAttendanceSheet
+          cell={markCell as any}
+          onClose={() => setMarkCell(null)}
+          facultyId={userId!}
+        />
+      )}
     </div>
   );
 }

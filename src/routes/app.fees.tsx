@@ -44,14 +44,43 @@ function FeesPage() {
 
   const canManage = primaryRole === "admin" || primaryRole === "hod";
 
+  const [loading, setLoading] = useState(false);
+
   const load = async () => {
+    setLoading(true);
     if (primaryRole === "student" && userId) {
       const { data } = await supabase.from("fees").select("*").eq("student_id", userId);
       setRows((data as FeeRow[]) ?? []);
     } else {
-      const { data } = await supabase.from("fees").select("*, students(roll_no, section, year, department_id, profiles(full_name))").order("updated_at", { ascending: false });
-      setRows((data as unknown as FeeRow[]) ?? []);
+      // Fetch fees with student basic info
+      const { data: feeData } = await supabase
+        .from("fees")
+        .select("*, students(roll_no, section, year, department_id)")
+        .order("updated_at", { ascending: false });
+      
+      const fees = (feeData as any[]) ?? [];
+      
+      // Fetch names separately for robustness
+      const studentIds = fees.map(f => f.student_id);
+      if (studentIds.length) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", studentIds);
+        
+        const nameMap: Record<string, string> = {};
+        for (const p of profs ?? []) nameMap[p.id] = p.full_name;
+        
+        fees.forEach(f => {
+          if (f.students) {
+            f.students.profiles = { full_name: nameMap[f.student_id] ?? "—" };
+          }
+        });
+      }
+      
+      setRows(fees as unknown as FeeRow[]);
     }
+    setLoading(false);
   };
 
   const loadStudents = async () => {
@@ -70,10 +99,17 @@ function FeesPage() {
 
   const filteredRows = primaryRole === "student" ? rows : rows.filter((r) => {
     const s = r.students;
-    if (!s) return scope.department_id === "all" && scope.year === "all" && scope.section === "all";
+    if (!s) return false;
+    
+    // Department Filter
     if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    
+    // Year Filter
     if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    
+    // Section Filter
     if (scope.section !== "all" && s.section !== scope.section) return false;
+    
     return true;
   });
 
@@ -87,7 +123,6 @@ function FeesPage() {
     const { error } = await supabase.from("fees").update({
       total_fee: total,
       paid_amount: paid,
-      due_amount: total - paid,
       updated_at: new Date().toISOString(),
     }).eq("id", id);
     if (error) toast.error(error.message);
@@ -100,14 +135,13 @@ function FeesPage() {
     const total = Number(addForm.total_fee);
     const paid = Number(addForm.paid_amount);
     setSaving(true);
-    const { error } = await supabase.from("fees").insert({
+    const { error } = await supabase.from("fees").upsert({
       student_id: addForm.student_id,
       fee_type: feeType,
       semester: addForm.semester,
       total_fee: total,
       paid_amount: paid,
-      due_amount: total - paid,
-    });
+    }, { onConflict: "student_id,semester,fee_type" });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Fee added");
