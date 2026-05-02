@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ChevronRight } from "lucide-react";
 import { ScopeFilters, ALL_SCOPE, type Scope } from "@/components/ScopeFilters";
+import { DAYS, todayDow } from "@/lib/types";
 
 export const Route = createFileRoute("/app/attendance")({
   head: () => ({ meta: [{ title: "Attendance — AcademiaHub" }] }),
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/app/attendance")({
 });
 
 type StudentRow = { id: string; roll_no: string; section: string; year: number; department_id: string; profiles: { full_name: string } | null };
+type TimetableClass = { id: string; subject: string; section: string; year: number; department_id: string; start_time: string | null; end_time: string | null };
 
 function AttendancePage() {
   const { primaryRole, userId, profile } = useAuth();
@@ -30,6 +32,27 @@ function AttendancePage() {
   const [myAttendance, setMyAttendance] = useState<{ subject: string; date: string; status: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [scope, setScope] = useState<Scope>(ALL_SCOPE);
+
+  // Faculty: today's classes from timetable
+  const [todayClasses, setTodayClasses] = useState<TimetableClass[]>([]);
+  const [selectedClass, setSelectedClass] = useState<TimetableClass | null>(null);
+
+  // Load today's classes for faculty
+  useEffect(() => {
+    if (primaryRole !== "faculty" || !userId) return;
+    (async () => {
+      const dow = todayDow(); // 0=Sun, 1=Mon..6=Sat
+      if (dow === 0) { setTodayClasses([]); return; } // No classes on Sunday
+      const { data } = await supabase
+        .from("timetable")
+        .select("id, subject, section, year, department_id, start_time, end_time")
+        .eq("faculty_id", userId)
+        .eq("day_of_week", dow)
+        .eq("approved", true)
+        .order("start_time");
+      setTodayClasses((data as TimetableClass[]) ?? []);
+    })();
+  }, [primaryRole, userId]);
 
   // load students/subjects on role change
   useEffect(() => {
@@ -47,7 +70,6 @@ function AttendancePage() {
       if (primaryRole === "faculty" && userId) {
         const { data: f } = await supabase.from("faculty").select("subjects").eq("id", userId).maybeSingle();
         setSubjects(f?.subjects ?? []);
-        if (f?.subjects?.[0]) setSubject(f.subjects[0]);
       }
       // dept-scoped students for faculty/HOD; admin sees all
       let q = supabase.from("students").select("id, roll_no, section, year, department_id, profiles(full_name)").order("roll_no");
@@ -58,6 +80,18 @@ function AttendancePage() {
       setStudents((st as unknown as StudentRow[]) ?? []);
     })();
   }, [primaryRole, userId, profile?.department_id]);
+
+  // When faculty selects a class, set subject and scope
+  useEffect(() => {
+    if (selectedClass) {
+      setSubject(selectedClass.subject);
+      setScope({
+        department_id: selectedClass.department_id,
+        year: String(selectedClass.year),
+        section: selectedClass.section,
+      });
+    }
+  }, [selectedClass]);
 
   // load existing attendance for that subject+date
   useEffect(() => {
@@ -74,25 +108,34 @@ function AttendancePage() {
   const setStatus = (id: string, status: "present" | "absent") =>
     setMarks((m) => ({ ...m, [id]: status }));
 
+  const filteredStudents = students.filter((s) => {
+    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
+    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
+    if (scope.section !== "all" && s.section !== scope.section) return false;
+    return true;
+  });
+
   const submit = async () => {
     if (!subject || !date || !userId) return toast.error("Pick a subject and date");
-    const rows = students
-      .filter((s) => marks[s.id]) // only mark explicitly chosen
-      .map((s) => ({
-        student_id: s.id,
-        faculty_id: userId,
-        subject,
-        date,
-        status: marks[s.id],
-      }));
-    if (rows.length === 0) return toast.error("Mark at least one student");
+    // Auto-mark unmarked students as absent
+    const rows = filteredStudents.map((s) => ({
+      student_id: s.id,
+      faculty_id: userId,
+      subject,
+      date,
+      status: marks[s.id] || "absent",
+    }));
+    if (rows.length === 0) return toast.error("No students to mark");
     setSaving(true);
     const { error } = await supabase.from("attendance").upsert(rows, { onConflict: "student_id,subject,date" });
     setSaving(false);
     if (error) toast.error(error.message);
     else {
       toast.success(`Saved ${rows.length} entries`);
-      setExisting(marks);
+      const newMap: Record<string, "present" | "absent"> = {};
+      for (const r of rows) newMap[r.student_id] = r.status as "present" | "absent";
+      setExisting(newMap);
+      setMarks(newMap);
     }
   };
 
@@ -102,7 +145,6 @@ function AttendancePage() {
     const present = myAttendance.filter((a) => a.status === "present").length;
     const pct = total ? Math.round((present / total) * 100) : 0;
 
-    // group by subject
     const bySub: Record<string, { p: number; t: number; latest?: { date: string; status: string } }> = {};
     for (const r of myAttendance) {
       bySub[r.subject] ??= { p: 0, t: 0 };
@@ -156,10 +198,7 @@ function AttendancePage() {
                   </div>
                 </div>
                 <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full ${subPct >= 75 ? "bg-success" : "bg-destructive"}`}
-                    style={{ width: `${subPct}%` }}
-                  />
+                  <div className={`h-full ${subPct >= 75 ? "bg-success" : "bg-destructive"}`} style={{ width: `${subPct}%` }} />
                 </div>
               </div>
             );
@@ -169,27 +208,63 @@ function AttendancePage() {
     );
   }
 
-  // ===== FACULTY / HOD / ADMIN VIEW =====
+  // ===== FACULTY VIEW — show today's classes first =====
   const canMark = primaryRole === "faculty";
-  const filteredStudents = students.filter((s) => {
-    if (scope.department_id !== "all" && s.department_id !== scope.department_id) return false;
-    if (scope.year !== "all" && s.year !== Number(scope.year)) return false;
-    if (scope.section !== "all" && s.section !== scope.section) return false;
-    return true;
-  });
   const dirty = useMemo(
-    () => filteredStudents.some((s) => marks[s.id] && marks[s.id] !== existing[s.id]),
+    () => filteredStudents.some((s) => (marks[s.id] || "absent") !== (existing[s.id] || undefined)),
     [marks, existing, filteredStudents]
   );
 
+  const fmtTime = (t: string | null) => {
+    if (!t) return "";
+    const [h, m] = t.split(":");
+    const hh = Number(h);
+    const h12 = ((hh + 11) % 12) + 1;
+    return `${h12}:${m ?? "00"} ${hh < 12 ? "AM" : "PM"}`;
+  };
+
   return (
     <div>
-      <PageHeader title="Attendance" description={canMark ? "Mark attendance per subject per day" : "View attendance"} />
+      <PageHeader title="Attendance" description={canMark ? "Select a class to mark attendance" : "View attendance"} />
+
+      {/* Faculty: Today's classes cards */}
+      {canMark && todayClasses.length > 0 && (
+        <div className="mb-4">
+          <h2 className="mb-2 text-sm font-medium">Today's classes ({DAYS[todayDow()]})</h2>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {todayClasses.map((cls) => {
+              const isSelected = selectedClass?.id === cls.id;
+              return (
+                <button
+                  key={cls.id}
+                  onClick={() => setSelectedClass(cls)}
+                  className={`rounded-xl border p-3 text-left transition-colors ${isSelected ? "border-primary bg-primary/5 ring-1 ring-primary" : "bg-card hover:bg-muted/40"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium text-sm">{cls.subject}</div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Sec {cls.section} · Year {cls.year} · {fmtTime(cls.start_time)} – {fmtTime(cls.end_time)}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {canMark && todayClasses.length === 0 && (
+        <div className="mb-4 rounded-xl border bg-card p-6 text-center text-sm text-muted-foreground">
+          No classes scheduled for today ({DAYS[todayDow()] || "Sunday"}).
+        </div>
+      )}
+
+      {/* Manual subject/date picker + filters for HOD/Admin or fallback */}
       <div className="rounded-xl border bg-card p-4 shadow-soft">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label>Subject</Label>
-            <Select value={subject} onValueChange={setSubject}>
+            <Select value={subject} onValueChange={(v) => { setSubject(v); setSelectedClass(null); }}>
               <SelectTrigger><SelectValue placeholder="Pick subject" /></SelectTrigger>
               <SelectContent>
                 {subjects.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -203,8 +278,8 @@ function AttendancePage() {
           </div>
           {canMark && (
             <div className="flex items-end">
-              <Button className="w-full" onClick={submit} disabled={saving || !dirty}>
-                {saving ? "Saving…" : dirty ? "Save attendance" : "No changes"}
+              <Button className="w-full" onClick={submit} disabled={saving || filteredStudents.length === 0}>
+                {saving ? "Saving…" : "Save attendance"}
               </Button>
             </div>
           )}
@@ -218,14 +293,14 @@ function AttendancePage() {
       <div className="mt-4 rounded-xl border bg-card divide-y">
         {filteredStudents.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No students match the filters.</p>}
         {filteredStudents.map((s) => {
-          const status = marks[s.id]; // undefined = not marked
+          const status = marks[s.id];
           const wasExisting = existing[s.id];
           return (
             <div key={s.id} className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium">{s.profiles?.full_name ?? "—"}</div>
                 <div className="text-xs text-muted-foreground">
-                  {s.roll_no} · Sec {s.section}
+                  {s.roll_no} · Sec {s.section} · Y{s.year}
                   {wasExisting && <span className="ml-2 text-[10px] uppercase tracking-wide">(saved)</span>}
                 </div>
               </div>
