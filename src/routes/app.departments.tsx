@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { RoleGuard } from "@/components/RoleGuard";
+import { useAuth } from "@/stores/auth-store";
 import { Building2, Plus, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ type Row = { id: string; name: string; code: string; hod_id: string | null };
 type Person = { id: string; full_name: string };
 
 function DepartmentsPage() {
+  const { profile } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Record<string, { s: number; f: number }>>({});
   const [profileMap, setProfileMap] = useState<Record<string, string>>({});
@@ -66,7 +68,11 @@ function DepartmentsPage() {
     setSaving(true);
     const { error } = await supabase
       .from("departments")
-      .insert({ name: form.name.trim(), code: form.code.trim().toUpperCase() });
+      .insert({ 
+        name: form.name.trim(), 
+        code: form.code.trim().toUpperCase(),
+        college_id: profile?.college_id
+      });
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Department created");
@@ -111,7 +117,7 @@ function DepartmentsPage() {
   };
 
   return (
-    <RoleGuard allow={["admin"]}>
+    <RoleGuard allow={["super_admin", "admin"]}>
       <PageHeader
         title="Departments"
         description="Manage academic departments and assign HODs"

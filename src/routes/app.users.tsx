@@ -18,8 +18,9 @@ export const Route = createFileRoute("/app/users")({
   component: UsersPage,
 });
 
-type Row = { id: string; full_name: string; email: string; department_id: string | null; must_reset_password: boolean };
+type Row = { id: string; full_name: string; email: string; college_id: string | null; department_id: string | null; must_reset_password: boolean; college?: { name: string } };
 type Dept = { id: string; name: string };
+type College = { id: string; name: string };
 
 function generateTempPassword() {
   // 10 chars: uppercase + lowercase + digit + symbol
@@ -35,15 +36,17 @@ function generateTempPassword() {
 }
 
 function UsersPage() {
-  const { primaryRole, profile } = useAuth();
+  const { primaryRole, profile, college: currentCollege } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [roleMap, setRoleMap] = useState<Record<string, AppRole[]>>({});
   const [depts, setDepts] = useState<Dept[]>([]);
+  const [colleges, setColleges] = useState<College[]>([]);
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createdCreds, setCreatedCreds] = useState<{ email: string; password: string } | null>(null);
 
   const allowedRoles = useMemo<AppRole[]>(() => {
+    if (primaryRole === "super_admin") return ["super_admin", "admin", "hod", "faculty", "student"];
     if (primaryRole === "admin") return ["hod", "faculty", "student"];
     if (primaryRole === "hod") return ["faculty", "student"];
     if (primaryRole === "faculty") return ["student"];
@@ -55,6 +58,7 @@ function UsersPage() {
     password: generateTempPassword(),
     full_name: "",
     role: "student" as AppRole,
+    college_id: "",
     department_id: "",
     roll_no: "",
     section: "A",
@@ -75,28 +79,41 @@ function UsersPage() {
     if ((primaryRole === "hod" || primaryRole === "faculty") && profile?.department_id) {
       setForm((f) => ({ ...f, department_id: profile.department_id! }));
     }
-  }, [primaryRole, profile?.department_id]);
+    if (primaryRole !== "super_admin" && profile?.college_id) {
+      setForm((f) => ({ ...f, college_id: profile.college_id! }));
+    }
+  }, [primaryRole, profile?.department_id, profile?.college_id]);
 
   const load = async () => {
-    const [{ data: profiles }, { data: roles }, { data: dpts }] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, department_id, must_reset_password"),
+    const queries: any[] = [
+      supabase.from("profiles").select("id, full_name, email, college_id, department_id, must_reset_password, college:colleges(name)"),
       supabase.from("user_roles").select("user_id, role"),
       supabase.from("departments").select("id, name"),
-    ]);
-    setRows((profiles as Row[]) ?? []);
+    ];
+    
+    if (primaryRole === "super_admin") {
+      queries.push(supabase.from("colleges").select("id, name"));
+    }
+
+    const [profilesRes, rolesRes, dptsRes, collegesRes] = await Promise.all(queries);
+    
+    setRows((profilesRes.data as Row[]) ?? []);
     const map: Record<string, AppRole[]> = {};
-    for (const r of roles ?? []) (map[r.user_id] ??= []).push(r.role as AppRole);
+    for (const r of rolesRes.data ?? []) (map[r.user_id] ??= []).push(r.role as AppRole);
     setRoleMap(map);
-    setDepts(dpts ?? []);
+    setDepts(dptsRes.data ?? []);
+    if (collegesRes) setColleges(collegesRes.data ?? []);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [primaryRole]);
 
   const validateEdu = (email: string) => /\.edu(\.[a-z]{2,})?$/i.test(email.trim());
 
   const submit = async () => {
     if (!form.email.trim() || !form.full_name.trim()) return toast.error("Name and email required");
     if (form.password.length < 8) return toast.error("Temporary password must be at least 8 characters");
+    if (primaryRole === "super_admin" && !form.college_id) return toast.error("College required");
+    
     if (!validateEdu(form.email)) {
       const ok = window.confirm("Email is not a .edu address. Create user anyway?");
       if (!ok) return;
@@ -108,6 +125,7 @@ function UsersPage() {
       password: form.password,
       full_name: form.full_name.trim(),
       role: form.role,
+      college_id: form.college_id || null,
       department_id: form.department_id || null,
     };
     if (form.role === "student") {
@@ -141,21 +159,25 @@ function UsersPage() {
   };
 
   const deptName = (id: string | null) => depts.find((d) => d.id === id)?.name ?? "—";
+  const collegeName = (id: string | null) => colleges.find((c) => c.id === id)?.name ?? "—";
 
-  // Filter visible users by role scope
+  // Filter visible users by role scope and college isolation
   const visibleRows = rows.filter((r) => {
+    if (primaryRole === "super_admin") return true;
+    if (r.college_id !== profile?.college_id) return false;
     if (primaryRole === "admin") return true;
     if (primaryRole === "hod" || primaryRole === "faculty") return r.department_id === profile?.department_id;
     return false;
   });
 
   const description =
-    primaryRole === "admin" ? "All users in the system"
+    primaryRole === "super_admin" ? "All users across all colleges"
+    : primaryRole === "admin" ? `All users in ${currentCollege?.name || 'your college'}`
     : primaryRole === "hod" ? "Faculty and students in your department"
     : "Students in your department";
 
   return (
-    <RoleGuard allow={["admin", "hod", "faculty"]}>
+    <RoleGuard allow={["super_admin", "admin", "hod", "faculty"]}>
       <PageHeader
         title="Users"
         description={description}
@@ -188,6 +210,17 @@ function UsersPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                {primaryRole === "super_admin" && (
+                  <div className="grid gap-1.5">
+                    <Label>College</Label>
+                    <Select value={form.college_id} onValueChange={(v) => setForm({ ...form, college_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Pick college" /></SelectTrigger>
+                      <SelectContent>
+                        {colleges.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 {form.role !== "admin" && (
                   <div className="grid gap-1.5">
                     <Label>Department</Label>
@@ -243,6 +276,9 @@ function UsersPage() {
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Name</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Email</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Role</th>
+              {primaryRole === "super_admin" && (
+                <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">College</th>
+              )}
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Department</th>
               <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">Status</th>
             </tr>
@@ -264,6 +300,9 @@ function UsersPage() {
                     <span key={role} className="mr-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">{ROLE_LABEL[role]}</span>
                   ))}
                 </td>
+                {primaryRole === "super_admin" && (
+                  <td className="px-4 py-3 text-muted-foreground">{r.college?.name || "—"}</td>
+                )}
                 <td className="px-4 py-3 text-muted-foreground">{deptName(r.department_id)}</td>
                 <td className="px-4 py-3">
                   {r.must_reset_password ? (

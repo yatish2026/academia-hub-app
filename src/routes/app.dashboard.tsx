@@ -34,6 +34,7 @@ function DashboardPage() {
         .select("id, subject, start_time, end_time, faculty_id, section, department_id")
         .eq("day_of_week", dow)
         .eq("approved", true)
+        .eq("college_id", profile?.college_id)
         .order("start_time");
       let today = (tt as TT[]) ?? [];
       // scope by department for non-admin
@@ -53,16 +54,17 @@ function DashboardPage() {
       const { data: ns } = await supabase
         .from("notices")
         .select("id, title, created_at")
+        .eq("college_id", profile?.college_id)
         .order("created_at", { ascending: false })
         .limit(3);
       setRecentNotices(ns ?? []);
 
       if (primaryRole === "admin") {
         const [u, s, f, d] = await Promise.all([
-          supabase.from("profiles").select("*", { count: "exact", head: true }),
-          supabase.from("students").select("*", { count: "exact", head: true }),
-          supabase.from("faculty").select("*", { count: "exact", head: true }),
-          supabase.from("departments").select("*", { count: "exact", head: true }),
+          supabase.from("profiles").select("*", { count: "exact", head: true }).eq("college_id", profile?.college_id),
+          supabase.from("students").select("*", { count: "exact", head: true }).eq("college_id", profile?.college_id),
+          supabase.from("faculty").select("*", { count: "exact", head: true }).eq("college_id", profile?.college_id),
+          supabase.from("departments").select("*", { count: "exact", head: true }).eq("college_id", profile?.college_id),
         ]);
         setStats([
           { label: "Users", value: u.count ?? 0 },
@@ -70,14 +72,14 @@ function DashboardPage() {
           { label: "Faculty", value: f.count ?? 0, accent: "warning" },
           { label: "Departments", value: d.count ?? 0 },
         ]);
-        const { data: fees } = await supabase.from("fees").select("total_fee, paid_amount");
+        const { data: fees } = await supabase.from("fees").select("total_fee, paid_amount").eq("college_id", profile?.college_id);
         const total = (fees ?? []).reduce((a, x) => a + Number(x.total_fee), 0);
         const paid = (fees ?? []).reduce((a, x) => a + Number(x.paid_amount), 0);
         setPie([
           { name: "Collected", value: paid },
           { name: "Pending", value: Math.max(total - paid, 0) },
         ]);
-        const { data: att } = await supabase.from("attendance").select("status");
+        const { data: att } = await supabase.from("attendance").select("status").eq("college_id", profile?.college_id);
         const present = (att ?? []).filter((a) => a.status === "present").length;
         const absent = (att ?? []).filter((a) => a.status === "absent").length;
         setChart([{ name: "Present", value: present }, { name: "Absent", value: absent }]);

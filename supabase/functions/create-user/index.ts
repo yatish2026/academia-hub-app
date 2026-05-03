@@ -12,13 +12,14 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type AppRole = "admin" | "hod" | "faculty" | "student";
+type AppRole = "super_admin" | "admin" | "hod" | "faculty" | "student";
 
 type Payload = {
   email: string;
   password: string;
   full_name: string;
   role: AppRole;
+  college_id?: string;
   department_id?: string | null;
   roll_no?: string;
   section?: string;
@@ -28,6 +29,7 @@ type Payload = {
 };
 
 const PERMISSIONS: Record<AppRole, AppRole[]> = {
+  super_admin: ["super_admin", "admin", "hod", "faculty", "student"],
   admin: ["hod", "faculty", "student"],
   hod: ["faculty", "student"],
   faculty: ["student"],
@@ -51,15 +53,17 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-    // Determine caller's highest role + department
+    // Determine caller's highest role + college + department
     const [rolesRes, callerProfileRes] = await Promise.all([
       admin.from("user_roles").select("role").eq("user_id", user.id),
-      admin.from("profiles").select("department_id").eq("id", user.id).maybeSingle(),
+      admin.from("profiles").select("college_id, department_id").eq("id", user.id).maybeSingle(),
     ]);
     const callerRoles = (rolesRes.data ?? []).map((r) => r.role as AppRole);
-    const ROLE_PRIORITY: AppRole[] = ["admin", "hod", "faculty", "student"];
+    const ROLE_PRIORITY: AppRole[] = ["super_admin", "admin", "hod", "faculty", "student"];
     const callerRole = ROLE_PRIORITY.find((r) => callerRoles.includes(r));
     if (!callerRole) return json({ error: "Forbidden — no role assigned" }, 403);
+    
+    const callerCollege: string | null = callerProfileRes.data?.college_id ?? null;
     const callerDept: string | null = callerProfileRes.data?.department_id ?? null;
 
     const body = (await req.json()) as Payload;
@@ -71,6 +75,15 @@ Deno.serve(async (req) => {
     const allowed = PERMISSIONS[callerRole] ?? [];
     if (!allowed.includes(body.role)) {
       return json({ error: `Forbidden — your role (${callerRole}) cannot create ${body.role}` }, 403);
+    }
+
+    // College scoping
+    let targetCollegeId = body.college_id;
+    if (callerRole !== "super_admin") {
+      if (!callerCollege) return json({ error: "Your account has no college assigned" }, 403);
+      targetCollegeId = callerCollege;
+    } else if (!targetCollegeId) {
+      return json({ error: "super_admin must provide college_id" }, 400);
     }
 
     // Department scoping for HOD / faculty
@@ -96,20 +109,28 @@ Deno.serve(async (req) => {
       email: body.email,
       password: body.password,
       email_confirm: true,
-      user_metadata: { full_name: body.full_name },
+      user_metadata: { 
+        full_name: body.full_name,
+        college_id: targetCollegeId,
+        role: body.role
+      },
+      app_metadata: {
+        college_id: targetCollegeId
+      }
     });
     if (createErr) return json({ error: createErr.message }, 400);
     const newUserId = created.user!.id;
 
-    // Profile (handle_new_user trigger creates the row; we update dept + ensure must_reset)
+    // Profile (trigger handles creation; we update details)
     await admin
       .from("profiles")
-      .update({ department_id: body.department_id ?? null, must_reset_password: true })
+      .update({ 
+        department_id: body.department_id ?? null, 
+        college_id: targetCollegeId
+      })
       .eq("id", newUserId);
 
-    // Role
-    const { error: roleErr } = await admin.from("user_roles").insert({ user_id: newUserId, role: body.role });
-    if (roleErr) return json({ error: `Role assignment failed: ${roleErr.message}` }, 400);
+    // Role is handled by handle_new_user trigger
 
     // Role-specific row
     if (body.role === "student") {
@@ -119,15 +140,23 @@ Deno.serve(async (req) => {
         department_id: body.department_id!,
         section: body.section ?? "A",
         year: body.year ?? 1,
+        college_id: targetCollegeId
       });
       if (error) return json({ error: error.message }, 400);
-      await admin.from("fees").insert({ student_id: newUserId, total_fee: 0, paid_amount: 0, semester: "Sem 1" });
+      await admin.from("fees").insert({ 
+        student_id: newUserId, 
+        total_fee: 0, 
+        paid_amount: 0, 
+        semester: "Sem 1",
+        college_id: targetCollegeId
+      });
     } else if (body.role === "faculty" || body.role === "hod") {
       const { error } = await admin.from("faculty").insert({
         id: newUserId,
         employee_no: body.employee_no!,
         department_id: body.department_id!,
         subjects: body.subjects ?? [],
+        college_id: targetCollegeId
       });
       if (error) return json({ error: error.message }, 400);
       if (body.role === "hod") {

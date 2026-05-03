@@ -21,6 +21,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [collegeCode, setCollegeCode] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => { init(); }, [init]);
@@ -32,7 +33,7 @@ function LoginPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const res = await signIn(email, password);
+    const res = await signIn(email, password, collegeCode);
     if (res.error) setError(res.error);
     // navigation happens via the effect above once auth state + profile resolves
   };
@@ -48,6 +49,10 @@ function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">College Management ERP</p>
         </div>
         <form onSubmit={submit} className="rounded-2xl border bg-card p-6 shadow-card space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="collegeCode">College Code</Label>
+            <Input id="collegeCode" type="text" value={collegeCode} onChange={(e) => setCollegeCode(e.target.value)} placeholder="e.g. SVCET123" />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@college.edu" autoComplete="email" />

@@ -1,6 +1,7 @@
-export type AppRole = "admin" | "hod" | "faculty" | "student";
+export type AppRole = "super_admin" | "admin" | "hod" | "faculty" | "student";
 
 export const ROLE_LABEL: Record<AppRole, string> = {
+  super_admin: "Super Admin",
   admin: "Principal (Admin)",
   hod: "Head of Department",
   faculty: "Faculty",

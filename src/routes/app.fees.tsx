@@ -176,7 +176,7 @@ function FeesPage() {
   }
 
   return (
-    <RoleGuard allow={["admin", "hod"]}>
+    <RoleGuard allow={["super_admin", "admin", "hod"]}>
       <PageHeader
         title="Fees"
         description={primaryRole === "admin" ? "Manage all student fees" : "View department fees"}

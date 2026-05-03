@@ -220,7 +220,7 @@ function AttendancePage() {
       )}
 
       {/* Scope Filters and Search Results — HOD and Admin ONLY */}
-      {(primaryRole === "hod" || primaryRole === "admin") && (
+      {(primaryRole === "hod" || primaryRole === "admin" || primaryRole === "super_admin") && (
         <>
           <div className="mb-4 rounded-xl border bg-card p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">

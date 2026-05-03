@@ -23,6 +23,7 @@ import { Route as AppFeesRouteImport } from './routes/app.fees'
 import { Route as AppDepartmentsRouteImport } from './routes/app.departments'
 import { Route as AppDashboardRouteImport } from './routes/app.dashboard'
 import { Route as AppAttendanceRouteImport } from './routes/app.attendance'
+import { Route as AppCollegesRouteImport } from './routes/app.colleges'
 import { Route as AppUsersUserIdRouteImport } from './routes/app.users.$userId'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -95,6 +96,11 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCollegesRoute = AppCollegesRouteImport.update({
+  id: '/colleges',
+  path: '/colleges',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppUsersUserIdRoute = AppUsersUserIdRouteImport.update({
   id: '/$userId',
   path: '/$userId',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/colleges': typeof AppCollegesRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/colleges': typeof AppCollegesRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/app/attendance': typeof AppAttendanceRoute
+  '/app/colleges': typeof AppCollegesRoute
   '/app/dashboard': typeof AppDashboardRoute
   '/app/departments': typeof AppDepartmentsRoute
   '/app/fees': typeof AppFeesRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/app/attendance'
+    | '/app/colleges'
     | '/app/dashboard'
     | '/app/departments'
     | '/app/fees'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/app/attendance'
+    | '/app/colleges'
     | '/app/dashboard'
     | '/app/departments'
     | '/app/fees'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/app/attendance'
+    | '/app/colleges'
     | '/app/dashboard'
     | '/app/departments'
     | '/app/fees'
@@ -314,6 +326,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/colleges': {
+      id: '/app/colleges'
+      path: '/colleges'
+      fullPath: '/app/colleges'
+      preLoaderRoute: typeof AppCollegesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/users/$userId': {
       id: '/app/users/$userId'
       path: '/$userId'
@@ -338,6 +357,7 @@ const AppUsersRouteWithChildren = AppUsersRoute._addFileChildren(
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppCollegesRoute: typeof AppCollegesRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDepartmentsRoute: typeof AppDepartmentsRoute
   AppFeesRoute: typeof AppFeesRoute
@@ -351,6 +371,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
+  AppCollegesRoute: AppCollegesRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDepartmentsRoute: AppDepartmentsRoute,
   AppFeesRoute: AppFeesRoute,

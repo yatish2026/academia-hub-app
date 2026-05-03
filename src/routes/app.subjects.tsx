@@ -63,7 +63,7 @@ function SubjectsPage() {
   };
 
   return (
-    <RoleGuard allow={["admin", "hod"]}>
+    <RoleGuard allow={["super_admin", "admin", "hod"]}>
       <PageHeader
         title="Subjects"
         description="Assign subjects to each faculty. Faculty will see these in their attendance dropdown."

@@ -24,7 +24,7 @@ function NoticesPage() {
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const canPost = primaryRole === "admin" || primaryRole === "hod" || primaryRole === "faculty";
+  const canPost = primaryRole === "admin" || primaryRole === "hod" || primaryRole === "faculty" || primaryRole === "super_admin";
 
   const load = async () => {
     const { data } = await supabase.from("notices").select("*").order("created_at", { ascending: false });
@@ -90,7 +90,7 @@ function NoticesPage() {
                   <p className="mt-2 text-xs text-muted-foreground">{format(new Date(n.created_at), "PPP p")}</p>
                 </div>
               </div>
-              {(n.created_by === userId || primaryRole === "admin") && (
+              {(n.created_by === userId || primaryRole === "admin" || primaryRole === "super_admin") && (
                 <button onClick={() => remove(n.id)} className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" aria-label="Delete">
                   <Trash2 className="h-4 w-4" />
                 </button>

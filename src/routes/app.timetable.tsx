@@ -53,8 +53,8 @@ function TimetablePage() {
     faculty_id: "",
   });
 
-  const canEdit = primaryRole === "hod" || primaryRole === "faculty" || primaryRole === "admin";
-  const canApprove = primaryRole === "hod" || primaryRole === "admin";
+  const canEdit = primaryRole === "hod" || primaryRole === "faculty" || primaryRole === "admin" || primaryRole === "super_admin";
+  const canApprove = primaryRole === "hod" || primaryRole === "admin" || primaryRole === "super_admin";
 
   const load = async () => {
     const { data } = await supabase

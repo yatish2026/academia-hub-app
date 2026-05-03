@@ -13,6 +13,7 @@ import {
   GraduationCap,
   UserCircle,
   Award,
+  School,
 } from "lucide-react";
 import { useAuth } from "@/stores/auth-store";
 import { ROLE_LABEL, type AppRole } from "@/lib/types";
@@ -22,16 +23,17 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 type NavItem = { to: string; label: string; icon: React.ComponentType<{ className?: string }>; roles: AppRole[] };
 
 const NAV: NavItem[] = [
-  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/app/users", label: "Users", icon: Users, roles: ["admin", "hod", "faculty"] },
-  { to: "/app/departments", label: "Departments", icon: Building2, roles: ["admin"] },
-  { to: "/app/subjects", label: "Subjects", icon: BookOpen, roles: ["admin", "hod"] },
-  { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/app/fees", label: "Fees", icon: Receipt, roles: ["admin", "hod", "student"] },
-  { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/app/marks", label: "Marks", icon: Award, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/app/notices", label: "Notices", icon: Megaphone, roles: ["admin", "hod", "faculty", "student"] },
-  { to: "/app/profile", label: "My Profile", icon: UserCircle, roles: ["admin", "hod", "faculty", "student"] },
+  { to: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "admin", "hod", "faculty", "student"] },
+  { to: "/app/colleges", label: "Colleges", icon: School, roles: ["super_admin"] },
+  { to: "/app/users", label: "Users", icon: Users, roles: ["super_admin", "admin", "hod", "faculty"] },
+  { to: "/app/departments", label: "Departments", icon: Building2, roles: ["super_admin", "admin"] },
+  { to: "/app/subjects", label: "Subjects", icon: BookOpen, roles: ["super_admin", "admin", "hod"] },
+  { to: "/app/attendance", label: "Attendance", icon: CalendarCheck, roles: ["super_admin", "admin", "hod", "faculty", "student"] },
+  { to: "/app/fees", label: "Fees", icon: Receipt, roles: ["super_admin", "admin", "hod", "student"] },
+  { to: "/app/timetable", label: "Timetable", icon: CalendarDays, roles: ["super_admin", "admin", "hod", "faculty", "student"] },
+  { to: "/app/marks", label: "Marks", icon: Award, roles: ["super_admin", "admin", "hod", "faculty", "student"] },
+  { to: "/app/notices", label: "Notices", icon: Megaphone, roles: ["super_admin", "admin", "hod", "faculty", "student"] },
+  { to: "/app/profile", label: "My Profile", icon: UserCircle, roles: ["super_admin", "admin", "hod", "faculty", "student"] },
 ];
 
 const MOBILE_NAV: NavItem[] = [

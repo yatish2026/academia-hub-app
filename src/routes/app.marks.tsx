@@ -47,7 +47,7 @@ function MarksPage() {
   });
 
   const isStudent = primaryRole === "student";
-  const canManage = primaryRole === "faculty" || primaryRole === "hod" || primaryRole === "admin";
+  const canManage = primaryRole === "faculty" || primaryRole === "hod" || primaryRole === "admin" || primaryRole === "super_admin";
 
   const load = async () => {
     let mq = supabase.from("marks").select("*").order("created_at", { ascending: false });
